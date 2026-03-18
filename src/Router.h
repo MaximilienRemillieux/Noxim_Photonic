@@ -34,6 +34,7 @@ SC_MODULE(Router)
 {
     friend class Selection_NOP;
     friend class Selection_BUFFER_LEVEL;
+    friend class Selection_BUFFER_LEVEL_VC; //My modification
 
     // I/O Ports
     sc_in_clk clock;		                  // The input clock for the router
@@ -141,6 +142,9 @@ SC_MODULE(Router)
     void ShowBuffersStats(std::ostream & out);
 
     bool connectedHubs(int src_hub, int dst_hub);
+
+    // return true if this router corresponds to a tile connected to any hub //My modification
+    bool hasHubPort() const;
 };
 
 #endif

@@ -56,7 +56,7 @@ selection_strategy: RANDOM
 #
 Hubs:
     defaults:
-    # channels from which Hub can receive/transmit
+    # channels from which Hub can receive/transmit to/from the attached nodes
         rx_radio_channels: [0]
         tx_radio_channels: [0]
     # list of node tiles attached to the hub

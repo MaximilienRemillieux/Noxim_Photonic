@@ -56,6 +56,11 @@ void loadConfiguration() {
         GlobalParams::mesh_dim_x = readParam<int>(config, "mesh_dim_x");
         GlobalParams::mesh_dim_y = readParam<int>(config, "mesh_dim_y");
     }
+    //Torus network params
+    if (GlobalParams::topology == TOPOLOGY_TORUS) {
+        GlobalParams::mesh_dim_x = readParam<int>(config, "mesh_dim_x");
+        GlobalParams::mesh_dim_y = readParam<int>(config, "mesh_dim_y");
+    }
 	//Delta network params
     if (GlobalParams::topology == TOPOLOGY_BASELINE  ||
         GlobalParams::topology == TOPOLOGY_BUTTERFLY ||
@@ -114,7 +119,16 @@ void loadConfiguration() {
         copy(GlobalParams::hub_configuration[hub_id].rxChannels.begin(), GlobalParams::hub_configuration[hub_id].rxChannels.end(), inserter(channelSet, channelSet.end()));
         copy(GlobalParams::hub_configuration[hub_id].txChannels.begin(), GlobalParams::hub_configuration[hub_id].txChannels.end(), inserter(channelSet, channelSet.end()));
     }
-
+    //My modification
+    // in ConfigurationManager::loadConfiguration(), just after the hub loop
+    cout << "loaded " << GlobalParams::hub_configuration.size()
+        << " hubs:\n";
+    for (auto &e : GlobalParams::hub_configuration) {
+        cout << "  hub " << e.first << " -> [";
+        for (int n : e.second.attachedNodes) cout << n << ' ';
+        cout << "]\n";
+    }
+    //My modification end
     YAML::Node default_channel_config_node = config["RadioChannels"]["defaults"];
     GlobalParams::default_channel_configuration = default_channel_config_node.as<ChannelConfig>();
 
@@ -280,7 +294,7 @@ void showConfig()
 
 void checkConfiguration()
 {
-	if (GlobalParams::topology==TOPOLOGY_MESH)
+	if (GlobalParams::topology==TOPOLOGY_MESH || GlobalParams::topology==TOPOLOGY_TORUS)
 	{
 		if (GlobalParams::mesh_dim_x <= 1) {
 			cerr << "Error: dimx must be greater than 1" << endl;
@@ -366,7 +380,7 @@ void checkConfiguration()
     }
 
     for (unsigned int i = 0; i < GlobalParams::hotspots.size(); i++) {
-	if (GlobalParams::topology==TOPOLOGY_MESH){
+	if (GlobalParams::topology==TOPOLOGY_MESH || GlobalParams::topology==TOPOLOGY_TORUS){
 		if (GlobalParams::hotspots[i].first >=
 		    GlobalParams::mesh_dim_x *
 		    GlobalParams::mesh_dim_y) {

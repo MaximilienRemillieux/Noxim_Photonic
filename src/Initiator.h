@@ -64,4 +64,43 @@ struct Initiator: sc_module
   int current_hub_relay;
 };
 
+
+/*  Photonic Network Interface Pni */
+struct PhotonicHub;
+{
+  PhotonicHub * photonichub;
+  // TLM-2 socket, defaults to 32-bits wide, base protocol
+  tlm_utils::simple_initiator_socket<Initiator> socket;
+
+  SC_HAS_PROCESS(Initiator);
+
+  //SC_CTOR(Initiator)
+  //: socket("socket")  // Construct and name socket
+  Initiator(sc_module_name nm,PhotonicHub* p): sc_module(nm),photonichub(p), socket("socket")
+  {
+
+      int l;
+      if (GlobalParams::use_winoc) SC_THREAD(thread_process);
+      sscanf(nm,"init_%d",&l);
+      _wavelength_id = l;
+      current_wavelength_relay = NOT_VALID;
+  }
+
+  void thread_process();
+  void check_transaction(tlm::tlm_generic_payload& trans);
+
+  sc_event end_request_event;
+
+  // custom
+  sc_event start_request_event;
+
+  Buffer buffer_tx;
+  Flit flit_payload; 
+
+    private: 
+  int _wavelength_id;
+  int current_wavelength_relay;
+};
+/*  Photonic Network Interface Pni  */
+
 #endif

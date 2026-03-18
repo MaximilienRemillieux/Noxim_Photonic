@@ -71,8 +71,12 @@ void ProcessingElement::txProcess()
 
 
 	if (ack_tx.read() == current_level_tx) {
+	    // handshake state logged each cycle
+	    //cout << "PE[" << local_id << "] tx handshake: ack=" << ack_tx.read()
+	    //    << " lvl=" << current_level_tx << " qsize=" << packet_queue.size() << endl;
 	    if (!packet_queue.empty()) {
 		Flit flit = nextFlit();	// Generate a new flit
+		//cout << "PE[" << local_id << "] injecting flit " << flit << " vc=" << flit.vc_id << endl;
 		flit_tx->write(flit);	// Send the generated flit
 		current_level_tx = 1 - current_level_tx;	// Negate the old value for Alternating Bit Protocol (ABP)
 		req_tx.write(current_level_tx);
@@ -88,7 +92,18 @@ Flit ProcessingElement::nextFlit()
 
     flit.src_id = packet.src_id;
     flit.dst_id = packet.dst_id;
-    flit.vc_id = packet.vc_id;
+
+//My modification
+    // For HUB_FIRST routing: all flits start in VC0 (mesh class)
+    // They will transition to VC1 after wireless transfer through the hub
+    // For other algorithms: use the packet's original VC selection
+    if (GlobalParams::routing_algorithm == "HUB_FIRST")
+        flit.vc_id = 0;  // All start in VC0, transition to VC1 at hub
+    else
+        flit.vc_id = packet.vc_id;
+    //flit.vc_id = packet.vc_id; ---Previous code ---
+//My modification end
+
     flit.timestamp = packet.timestamp;
     flit.sequence_no = packet.size - packet.flit_left;
     flit.sequence_length = packet.size;
@@ -143,7 +158,13 @@ bool ProcessingElement::canShot(Packet & packet)
 	else
 	    threshold = GlobalParams::probability_of_retransmission;
 
-	shot = (((double) rand()) / RAND_MAX < threshold);
+	// debug logging for injection probability
+	double draw = ((double) rand()) / RAND_MAX;
+	shot = (draw < threshold);
+	if (local_id == 0) {
+	//    cout << "PE[" << local_id << "] canShot(): thr=" << threshold
+	//         << " draw=" << draw << " -> " << (shot?"shot":"no shot") << "\n";
+	}
 	if (shot) {
 	    if (GlobalParams::traffic_distribution == TRAFFIC_RANDOM)
 		    packet = trafficRandom();
@@ -228,7 +249,7 @@ Packet ProcessingElement::trafficLocal()
 
 int ProcessingElement::findRandomDestination(int id, int hops)
 {
-    assert(GlobalParams::topology == TOPOLOGY_MESH);
+    assert(GlobalParams::topology == TOPOLOGY_MESH || GlobalParams::topology == TOPOLOGY_TORUS);
 
     int inc_y = rand()%2?-1:1;
     int inc_x = rand()%2?-1:1;
@@ -305,7 +326,7 @@ Packet ProcessingElement::trafficRandom()
     double range_start = 0.0;
     int max_id;
 
-    if (GlobalParams::topology == TOPOLOGY_MESH)
+    if (GlobalParams::topology == TOPOLOGY_MESH || GlobalParams::topology == TOPOLOGY_TORUS)
 	max_id = (GlobalParams::mesh_dim_x * GlobalParams::mesh_dim_y) - 1; //Mesh 
     else    // other delta topologies
 	max_id = GlobalParams::n_delta_tiles-1; 
@@ -357,7 +378,7 @@ Packet ProcessingElement::trafficTest()
 
 Packet ProcessingElement::trafficTranspose1()
 {
-    assert(GlobalParams::topology == TOPOLOGY_MESH);
+    assert(GlobalParams::topology == TOPOLOGY_MESH || GlobalParams::topology == TOPOLOGY_TORUS);
     Packet p;
     p.src_id = local_id;
     Coord src, dst;
@@ -379,7 +400,7 @@ Packet ProcessingElement::trafficTranspose1()
 
 Packet ProcessingElement::trafficTranspose2()
 {
-    assert(GlobalParams::topology == TOPOLOGY_MESH);
+    assert(GlobalParams::topology == TOPOLOGY_MESH || GlobalParams::topology == TOPOLOGY_TORUS);
     Packet p;
     p.src_id = local_id;
     Coord src, dst;

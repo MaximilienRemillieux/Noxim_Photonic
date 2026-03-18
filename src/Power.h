@@ -35,8 +35,8 @@ class Power {
 			 string selection_function);
 
     void configureHub(int link_width, 
-	              int buffer_to_tile_depth, 
-	              int buffer_from_tile_depth, 
+	        int buffer_to_tile_depth, 
+	        int buffer_from_tile_depth, 
 		      int buffer_item_size, 
 		      int antenna_buffer_rx_depth, 
 		      int antenna_buffer_tx_depth, 

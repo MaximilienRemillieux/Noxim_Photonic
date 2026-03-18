@@ -23,8 +23,9 @@ vector<int> Routing_XY::route(Router * router, const RouteData & routeData)
         directions.push_back(DIRECTION_WEST);
     else if (destination.y > current.y)
         directions.push_back(DIRECTION_SOUTH);
-    else
+    else if (destination.y < current.y)
         directions.push_back(DIRECTION_NORTH);
-
+    else {
+        directions.push_back(DIRECTION_LOCAL);}
     return directions;
    } 

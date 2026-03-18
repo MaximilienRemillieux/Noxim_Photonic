@@ -29,10 +29,16 @@ int Hub::route(Flit& f)
 		// ...or to a relay which is locally connected to the Hub
 		if (GlobalParams::hub_configuration[local_id].attachedNodes[i]==f.hub_relay_node)
 		{
-			assert(GlobalParams::winoc_dst_hops>0);
+			//My modification
+			// The router has already computed a relay node for wireless forwarding.
+			// Return the tile port for this relay node.
 			return tile2Port(f.hub_relay_node);
+			//{ --- Previous code ---
+			//assert(GlobalParams::winoc_dst_hops>0);
+			//return tile2Port(f.hub_relay_node);
+			//}
+			//My modification end
 		}
-
 	}
 	return DIRECTION_WIRELESS;
 
@@ -307,7 +313,9 @@ void Hub::antennaToTileProcess()
 				}
 				else
 				{
-					LOG << "Flit " << flit << " cannot move from buffer_to_tile[" << i <<"] [" << vc << "] to signal flit_tx["<<i<<"] " << endl;
+				//	cout << "Flit " << flit << " cannot move from buffer_to_tile[" << i <<"] [" << vc << "] to signal flit_tx["<<i<<"] " 
+				//		<< "current_level_tx=" << current_level_tx[i] << " ack_tx=" << ack_tx[i].read() 
+				//		<< " buffer_full_mask[" << vc << "]=" << buffer_full_status_tx[i].read().mask[vc] << endl;
 				}
 			}//if buffer not empty
 		}
@@ -325,8 +333,8 @@ void Hub::antennaToTileProcess()
 	{
 		int channel = rxChannels[i];
 
-		if (!(target[channel]->buffer_rx.IsEmpty()))
-		{
+		if (!(target[channel]->buffer_rx.IsEmpty())){
+			LOG << "### Hub " << local_id << " found flit in antenna buffer_rx for channel " << channel << endl;
 			Flit received_flit = target[channel]->buffer_rx.Front();
 			power.antennaBufferFront();
 
@@ -339,10 +347,20 @@ void Hub::antennaToTileProcess()
 					dst_port = tile2Port(received_flit.hub_relay_node);
 				else
                     dst_port = tile2Port(received_flit.dst_id);
-
+				
 				TReservation r;
 				r.input = channel;
-				r.vc = received_flit.vc_id;
+				//My modification
+				// For HUB_FIRST routing: force VC1 when antenna->tile to maintain class ordering
+				// VC0: mesh->hub (via DIRECTION_WIRELESS at hub tile)
+				// VC1: hub->mesh (after wireless transfer)
+				if (GlobalParams::routing_algorithm == "HUB_FIRST") {
+					//assert(GlobalParams::n_virtual_channels >= 2);
+					r.vc = 1; // force antenna->tile to use VC1 --- Previous code r.vc = 1 and received_flit.vc_id;---
+				} else {
+					r.vc = 1; // use flit's original VC for other routing
+				}
+				//My modification end
 
 				LOG << " Checking reservation availability of output port " << dst_port << " by channel " << channel << " for flit " << received_flit << endl;
 
@@ -377,6 +395,8 @@ void Hub::antennaToTileProcess()
 		int channel = rxChannels[i];
 		vector<pair<int,int> > reservations = antenna2tile_reservation_table.getReservations(channel);
 
+		LOG << "### Hub " << local_id << " forwarding phase for channel " << channel << ": found " << reservations.size() << " reservations" << endl;
+
 		if (reservations.size()!=0)
 		{
 			int rnd_idx = rand()%reservations.size();
@@ -393,6 +413,13 @@ void Hub::antennaToTileProcess()
 				{
 					target[channel]->buffer_rx.Pop();
 					power.antennaBufferPop();
+
+					//My modification
+					// Update flit's vc_id to match reserved VC to maintain consistency
+					// (important for HUB_FIRST routing where we force antenna->tile flits to VC1)
+					received_flit.vc_id = vc;
+					//My modification end
+
 					LOG << "*** [Ch" << channel << "] Moving flit  " << received_flit << " from buffer_rx to buffer_to_tile[" << port <<"][" << vc << "]" << endl;
 
 					buffer_to_tile[port][vc].Push(received_flit);
@@ -479,6 +506,7 @@ void Hub::tileToAntennaProcess()
 		r_from_tile[i] = new int[GlobalParams::n_virtual_channels];
 
 	// 1st phase: Reservation
+	//cout << "Hub " << local_id << " tileToAntennaProcess: checking " << num_ports << " ports" << endl;
 	for (int j = 0; j < num_ports; j++)
 	{
 		int i = (start_from_port + j) % (num_ports);
@@ -490,7 +518,7 @@ void Hub::tileToAntennaProcess()
 			if (!buffer_from_tile[i][vc].IsEmpty())
 			{
 				LOG << "Reservation: buffer_from_tile[" << i <<"][" << vc << "] not empty " << endl;
-
+                //cout << "Hub " << local_id << " buffer_from_tile[" << i << "][" << vc << "] has flit" << endl;
 				Flit flit = buffer_from_tile[i][vc].Front();
 
 				assert(flit.vc_id == vc);
@@ -500,11 +528,18 @@ void Hub::tileToAntennaProcess()
 
 				if (flit.flit_type == FLIT_TYPE_HEAD)
 				{
+				//My modification
+				// Only perform wireless channel reservation if routing result is DIRECTION_WIRELESS.
+				// If routing returns a local port, no wireless reservation needed.
+				if (r_from_tile[i][vc]==DIRECTION_WIRELESS)
+				//My modification end
+				{
 					TReservation r;
 					r.input = i;
 					r.vc = vc;
-
-					assert(r_from_tile[i][vc]==DIRECTION_WIRELESS);
+					//My modification
+					//assert(r_from_tile[i][vc]==DIRECTION_WIRELESS);
+					//My modification end
 					int channel;
 
 					if (flit.hub_relay_node==NOT_VALID)
@@ -538,6 +573,7 @@ void Hub::tileToAntennaProcess()
 					}
 					else assert(false); // no meaningful status here
 				}
+			}
 			}
 		}
 		start_from_vc[i] = (start_from_vc[i]+1)%GlobalParams::n_virtual_channels;
@@ -599,6 +635,42 @@ void Hub::tileToAntennaProcess()
 
 		}// for all the ports
 	}
+// My modification
+	// 2nd phase bis: Forward local flits (destinations attached to this hub or local relays)
+	// These flits have route() returning a port index (0..num_ports-1), not DIRECTION_WIRELESS
+	for (int i = 0; i < num_ports; i++)
+	{
+		for (int vc = 0; vc < GlobalParams::n_virtual_channels; vc++)
+		{
+			if (!buffer_from_tile[i][vc].IsEmpty())
+			{
+				Flit flit = buffer_from_tile[i][vc].Front();
+				int output_port = r_from_tile[i][vc];
+				
+				// Check if routing decision was a local port (not DIRECTION_WIRELESS)
+				if (output_port >= 0 && output_port < num_ports)
+				{
+					LOG << "Local forwarding flit " << flit << " from port[" << i << "][" << vc 
+					    << "] to buffer_to_tile[" << output_port << "]" << endl;
+					
+					if (!buffer_to_tile[output_port][vc].IsFull())
+					{
+						buffer_from_tile[i][vc].Pop();
+						power.bufferFromTilePop();
+						buffer_to_tile[output_port][vc].Push(flit);
+						power.bufferToTilePush();
+						
+						LOG << "Local flit moved to buffer_to_tile[" << output_port << "][" << vc << "]" << endl;
+					}
+					else
+					{
+						LOG << "buffer_to_tile[" << output_port << "][" << vc << "] IsFull, cannot move flit" << endl;
+					}
+				}
+			}
+		}
+	}
+// My modification end
 
 	for (int i = 0; i < num_ports; i++)
 	{

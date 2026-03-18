@@ -27,15 +27,16 @@ SC_MODULE(Tile)
     sc_in <bool> reset;	                        // The reset signal for the tile
 
     int local_id; // Unique ID
-
-    sc_in <Flit> flit_rx[DIRECTIONS];	// The input channels
-    sc_in <bool> req_rx[DIRECTIONS];	        // The requests associated with the input channels
-    sc_out <bool> ack_rx[DIRECTIONS];	        // The outgoing ack signals associated with the input channels
+// My modification j'ai ajouter + 2 à chaque tableau input channel, output channel, NoP related I/O pour inclure les ports locaux et hub
+    // The tile has mesh directions plus local and hub ports
+    sc_in <Flit> flit_rx[DIRECTIONS];	// The input channels (N,E,S,W,LOCAL,HUB)
+    sc_in <bool> req_rx[DIRECTIONS];	        // Requests for input channels
+    sc_out <bool> ack_rx[DIRECTIONS];	        // Acks for input channels
     sc_out <TBufferFullStatus> buffer_full_status_rx[DIRECTIONS];
 
-    sc_out <Flit> flit_tx[DIRECTIONS];	// The output channels
-    sc_out <bool> req_tx[DIRECTIONS];	        // The requests associated with the output channels
-    sc_in <bool> ack_tx[DIRECTIONS];	        // The outgoing ack signals associated with the output channels
+    sc_out <Flit> flit_tx[DIRECTIONS];	// The output channels (N,E,S,W,LOCAL,HUB)
+    sc_out <bool> req_tx[DIRECTIONS];	        // Requests for output channels
+    sc_in <bool> ack_tx[DIRECTIONS];	        // Ack signals for output channels
     sc_in <TBufferFullStatus> buffer_full_status_tx[DIRECTIONS];
 
     // hub specific ports
@@ -84,6 +85,7 @@ SC_MODULE(Tile)
 	r = new Router("Router");
 	r->clock(clock);
 	r->reset(reset);
+	// bind all directions including local and hub
 	for (int i = 0; i < DIRECTIONS; i++) {
 	    r->flit_rx[i] (flit_rx[i]);
 	    r->req_rx[i] (req_rx[i]);

@@ -49,6 +49,7 @@ using namespace std;
 
 //Topologies
 #define TOPOLOGY_MESH          "MESH"
+#define TOPOLOGY_TORUS         "TORUS"
 //Delta Networks Topologies
 #define TOPOLOGY_BASELINE      "BASELINE"
 #define TOPOLOGY_BUTTERFLY     "BUTTERFLY"

@@ -45,6 +45,10 @@ void Router::rxProcess()
 	    // 1) there is an incoming request
 	    // 2) there is a free slot in the input buffer of direction i
 	    //LOG<<"****RX****DIRECTION ="<<i<<  endl;
+	    //if (i == DIRECTION_LOCAL) {
+	    //    cout << "Router " << local_id << " rx local req=" << req_rx[i].read()
+	    //        << " lvl=" << current_level_rx[i] << endl;
+	    //}
 
 	    if (req_rx[i].read() == 1 - current_level_rx[i])
 	    { 
@@ -135,6 +139,8 @@ void Router::txProcess()
 
 		      // TODO: see PER POSTERI (adaptive routing should not recompute route if already reserved)
 		      int o = route(route_data);
+			  //cout << "Routing decision for flit " << flit << ": output direction " << o << " at time " << sc_time_stamp().to_double() / GlobalParams::clock_period_ps << endl;
+			  //cout << "Router " << local_id << " dir_in=" << route_data.dir_in << " tileHasHub=" << (GlobalParams::hub_for_tile.find(local_id) != GlobalParams::hub_for_tile.end()) << endl;
 
 		      // manage special case of target hub not directly connected to destination
 		      if (o>=DIRECTION_HUB_RELAY)
@@ -157,6 +163,7 @@ void Router::txProcess()
 		      {
 			  LOG << " reserving direction " << o << " for flit " << flit << endl;
 			  reservation_table.reserve(r, o);
+			  //cout << "DEBUG: Reserved output direction " << o << " (WIRELESS=" << DIRECTION_WIRELESS << ")" << endl;
 		      }
 		      else if (rt_status == RT_ALREADY_SAME)
 		      {
@@ -206,7 +213,7 @@ void Router::txProcess()
 		  {
 		      //if (GlobalParams::verbose_mode > VERBOSE_OFF) 
 		      LOG << "Input[" << i << "][" << vc << "] forwarded to Output[" << o << "], flit: " << flit << endl;
-
+    		  //cout << "DEBUG: Actually forwarding to output " << o << endl;
 		      flit_tx[o].write(flit);
 		      current_level_tx[o] = 1 - current_level_tx[o];
 		      req_tx[o].write(current_level_tx[o]);
@@ -316,9 +323,9 @@ void Router::perCycleUpdate()
 
 vector<int> Router::nextDeltaHops(RouteData rd) {
 
-	if (GlobalParams::topology == TOPOLOGY_MESH)
+	if (GlobalParams::topology == TOPOLOGY_MESH || GlobalParams::topology == TOPOLOGY_TORUS)
 	{
-		cout << "Mesh topologies are not supported for nextDeltaHops() ";
+		cout << "Mesh and Torus topologies are not supported for nextDeltaHops() ";
 		assert(false);
 	}
 	// annotate the initial nodes
@@ -639,6 +646,19 @@ void Router::ShowBuffersStats(std::ostream & out)
 	    buffer[i][vc].ShowStats(out);
 }
 
+
+// Returns true if the current router tile is attached to a hub //My modification
+bool Router::hasHubPort() const {
+    // check every hub configuration for this tile id
+    for (const auto &entry : GlobalParams::hub_configuration) {
+        const HubConfig &hc = entry.second;
+        for (int node : hc.attachedNodes) {
+            if (node == local_id)
+                return true;
+        }
+    }
+    return false;
+}
 
 bool Router::connectedHubs(int src_hub, int dst_hub) {
     vector<int> &first = GlobalParams::hub_configuration[src_hub].txChannels;

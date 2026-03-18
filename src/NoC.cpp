@@ -1,3 +1,4 @@
+
 /*
  * Noxim - the NoC Simulator
  *
@@ -128,7 +129,6 @@ void NoC::buildCommon()
 	hub_connected_ports = (int *) calloc(GlobalParams::hub_configuration.size(), sizeof(int));
 
 }
-
 void NoC::buildButterfly()
 {
 
@@ -176,7 +176,7 @@ void NoC::buildButterfly()
 	}
 
 
-// assert
+	// assert
 	// Create the mesh as a matrix of tiles
 	for (int j = 0; j < dimY; j++) {
 		for (int i = 0; i < dimX; i++) {
@@ -2203,16 +2203,14 @@ void NoC::buildMesh()
 
 	    // Tell to the router its coordinates
 	    t[i][j]->r->configure(j * GlobalParams::mesh_dim_x + i,
-				  GlobalParams::stats_warm_up_time,
-				  GlobalParams::buffer_depth,
-				  grtable);
+				  			  GlobalParams::stats_warm_up_time,
+				  			  GlobalParams::buffer_depth,
+				  			  grtable);
 	    t[i][j]->r->power.configureRouter(GlobalParams::flit_size,
-		      			      GlobalParams::buffer_depth,
-					      GlobalParams::flit_size,
-					      string(GlobalParams::routing_algorithm),
-					      "default");
-					      
-
+		      			      			  GlobalParams::buffer_depth,
+					      				  GlobalParams::flit_size,
+					      				  string(GlobalParams::routing_algorithm),
+					      				  "default");
 
 	    // Tell to the PE its coordinates
 	    t[i][j]->pe->local_id = j * GlobalParams::mesh_dim_x + i;
@@ -2379,9 +2377,308 @@ void NoC::buildMesh()
 
 }
 
+void NoC::buildTorus()
+{
+    buildCommon();
+
+    int dimX = GlobalParams::mesh_dim_x;
+    int dimY = GlobalParams::mesh_dim_y;
+
+    req = new sc_signal_NSWEH<bool>*[dimX];
+    ack = new sc_signal_NSWEH<bool>*[dimX];
+    buffer_full_status = new sc_signal_NSWEH<TBufferFullStatus>*[dimX];
+    flit = new sc_signal_NSWEH<Flit>*[dimX];
+
+    free_slots = new sc_signal_NSWE<int>*[dimX];
+    nop_data = new sc_signal_NSWE<NoP_data>*[dimX];
+
+    for (int i=0;i<dimX;i++)
+    {
+        req[i] = new sc_signal_NSWEH<bool>[dimY];
+        ack[i] = new sc_signal_NSWEH<bool>[dimY];
+        buffer_full_status[i] = new sc_signal_NSWEH<TBufferFullStatus>[dimY];
+        flit[i] = new sc_signal_NSWEH<Flit>[dimY];
+
+        free_slots[i] = new sc_signal_NSWE<int>[dimY];
+        nop_data[i] = new sc_signal_NSWE<NoP_data>[dimY];
+    }
+
+    t = new Tile**[GlobalParams::mesh_dim_x];
+    for (int i=0;i<GlobalParams::mesh_dim_x;i++)
+        t[i] = new Tile*[GlobalParams::mesh_dim_y];
+
+	// Create the torus as a matrix of tiles
+	for (int j=0;j<GlobalParams::mesh_dim_y;j++)
+	{
+		for (int i=0;i<GlobalParams::mesh_dim_x;i++)
+		{
+			// Create the single Tile with a proper name
+			char tile_name[64];
+			Coord tile_coord;
+			tile_coord.x = i;
+			tile_coord.y = j;
+			int tile_id = coord2Id(tile_coord);
+			sprintf(tile_name, "Tile[%02d][%02d]_(#%d)", i, j, tile_id);
+			t[i][j] = new Tile(tile_name, tile_id);
+
+			// Tell to the router its coordinates
+			t[i][j]->r->configure(j*GlobalParams::mesh_dim_x + i,
+								  GlobalParams::stats_warm_up_time,
+								  GlobalParams::buffer_depth,
+								  grtable);
+			t[i][j]->r->power.configureRouter(GlobalParams::flit_size,
+											  GlobalParams::buffer_depth,
+											  GlobalParams::flit_size,
+											  string(GlobalParams::routing_algorithm),
+											  "default");
+
+			// Tell to the PE its coordinates
+			t[i][j]->pe->local_id = j*GlobalParams::mesh_dim_x + i;
+
+	    // Check for traffic table availability
+	    if (GlobalParams::traffic_distribution == TRAFFIC_TABLE_BASED)
+	    {
+		t[i][j]->pe->traffic_table = &gttable;	// Needed to choose destination
+		t[i][j]->pe->never_transmit = (gttable.occurrencesAsSource(t[i][j]->pe->local_id) == 0);
+	    }
+	    else
+		t[i][j]->pe->never_transmit = false;
+		
+		if (GlobalParams::traffic_distribution == TRAFFIC_HARDCODED)
+		  t[i][j]->pe->traffic_hardcoded = &ghtable;
+
+		// Map clock and reset
+		t[i][j]->clock(clock);
+		t[i][j]->reset(reset);
+
+		// neighbor coordinates (with wrap-around)
+		int north = (j - 1 + GlobalParams::mesh_dim_y) % GlobalParams::mesh_dim_y;
+		int south = (j + 1) % GlobalParams::mesh_dim_y;
+		int west  = (i - 1 + GlobalParams::mesh_dim_x) % GlobalParams::mesh_dim_x;
+		int east  = (i + 1) % GlobalParams::mesh_dim_x;
+
+		// Map Rx signals
+		t[i][j]->req_rx[DIRECTION_NORTH] (req[i][north].south);
+		t[i][j]->flit_rx[DIRECTION_NORTH] (flit[i][north].south);
+		t[i][j]->ack_rx[DIRECTION_NORTH] (ack[i][north].north);
+		t[i][j]->buffer_full_status_rx[DIRECTION_NORTH] (buffer_full_status[i][north].north);
+		
+		t[i][j]->req_rx[DIRECTION_EAST] (req[east][j].west);
+		t[i][j]->flit_rx[DIRECTION_EAST] (flit[east][j].west);
+		t[i][j]->ack_rx[DIRECTION_EAST] (ack[east][j].east);
+		t[i][j]->buffer_full_status_rx[DIRECTION_EAST] (buffer_full_status[east][j].east);
+
+		t[i][j]->req_rx[DIRECTION_SOUTH] (req[i][south].north);
+		t[i][j]->flit_rx[DIRECTION_SOUTH] (flit[i][south].north);
+		t[i][j]->ack_rx[DIRECTION_SOUTH] (ack[i][south].south);
+		t[i][j]->buffer_full_status_rx[DIRECTION_SOUTH] (buffer_full_status[i][south].south);
+
+		t[i][j]->req_rx[DIRECTION_WEST] (req[west][j].east);
+		t[i][j]->flit_rx[DIRECTION_WEST] (flit[west][j].east);
+		t[i][j]->ack_rx[DIRECTION_WEST] (ack[west][j].west);
+		t[i][j]->buffer_full_status_rx[DIRECTION_WEST] (buffer_full_status[west][j].west);
+		
+		// Map Tx
+		t[i][j]->req_tx[DIRECTION_NORTH] (req[i][north].north);
+		t[i][j]->flit_tx[DIRECTION_NORTH] (flit[i][north].north);
+		t[i][j]->ack_tx[DIRECTION_NORTH] (ack[i][north].south);
+		t[i][j]->buffer_full_status_tx[DIRECTION_NORTH] (buffer_full_status[i][north].south);
+
+		t[i][j]->req_tx[DIRECTION_EAST] (req[east][j].east);
+		t[i][j]->flit_tx[DIRECTION_EAST] (flit[east][j].east);
+		t[i][j]->ack_tx[DIRECTION_EAST] (ack[east][j].west);
+		t[i][j]->buffer_full_status_tx[DIRECTION_EAST] (buffer_full_status[east][j].west);
+
+		t[i][j]->req_tx[DIRECTION_SOUTH] (req[i][south].south);
+		t[i][j]->flit_tx[DIRECTION_SOUTH] (flit[i][south].south);
+		t[i][j]->ack_tx[DIRECTION_SOUTH] (ack[i][south].north);
+		t[i][j]->buffer_full_status_tx[DIRECTION_SOUTH] (buffer_full_status[i][south].north);
+
+		t[i][j]->req_tx[DIRECTION_WEST] (req[west][j].west);
+		t[i][j]->flit_tx[DIRECTION_WEST] (flit[west][j].west);
+		t[i][j]->ack_tx[DIRECTION_WEST] (ack[west][j].east);
+		t[i][j]->buffer_full_status_tx[DIRECTION_WEST] (buffer_full_status[west][j].east);
+	
+		// signals/port when tile receives(rx) from hub
+		t[i][j]->hub_req_rx(req[i][j].from_hub);
+		t[i][j]->hub_flit_rx(flit[i][j].from_hub);
+		t[i][j]->hub_ack_rx(ack[i][j].to_hub);
+		t[i][j]->hub_buffer_full_status_rx(buffer_full_status[i][j].to_hub);
+		// signals/port when tile transmits(tx) to hub
+		t[i][j]->hub_req_tx(req[i][j].to_hub); 
+		t[i][j]->hub_flit_tx(flit[i][j].to_hub);
+		t[i][j]->hub_ack_tx(ack[i][j].from_hub);
+		t[i][j]->hub_buffer_full_status_tx(buffer_full_status[i][j].from_hub);
+	
+		map<int, int>::iterator it = GlobalParams::hub_for_tile.find(tile_id);
+		if (it != GlobalParams::hub_for_tile.end())
+		{
+			int hub_id = GlobalParams::hub_for_tile[tile_id];
+			int port = hub_connected_ports[hub_id]++;
+			hub[hub_id]->tile2port_mapping[t[i][j]->local_id] = port;
+
+			hub[hub_id]->req_rx[port](req[i][j].to_hub);
+			hub[hub_id]->flit_rx[port](flit[i][j].to_hub);
+			hub[hub_id]->ack_rx[port](ack[i][j].from_hub);
+			hub[hub_id]->buffer_full_status_rx[port](buffer_full_status[i][j].from_hub);
+
+			hub[hub_id]->flit_tx[port](flit[i][j].from_hub);
+			hub[hub_id]->req_tx[port](req[i][j].from_hub);
+			hub[hub_id]->ack_tx[port](ack[i][j].to_hub);
+			hub[hub_id]->buffer_full_status_tx[port](buffer_full_status[i][j].to_hub);
+		}
+	// Map buffer level signals (analogy with req_tx/rx port mapping)
+	t[i][j]->free_slots[DIRECTION_NORTH] (free_slots[i][north].north);
+	t[i][j]->free_slots[DIRECTION_EAST] (free_slots[east][j].east);
+	t[i][j]->free_slots[DIRECTION_SOUTH] (free_slots[i][south].south);
+	t[i][j]->free_slots[DIRECTION_WEST] (free_slots[west][j].west);
+
+	t[i][j]->free_slots_neighbor[DIRECTION_NORTH] (free_slots[i][north].south);
+	t[i][j]->free_slots_neighbor[DIRECTION_EAST] (free_slots[east][j].west);
+	t[i][j]->free_slots_neighbor[DIRECTION_SOUTH] (free_slots[i][south].north);
+	t[i][j]->free_slots_neighbor[DIRECTION_WEST] (free_slots[west][j].east);
+
+	// NoP
+	t[i][j]->NoP_data_out[DIRECTION_NORTH] (nop_data[i][j].north);
+	t[i][j]->NoP_data_out[DIRECTION_EAST] (nop_data[east][j].east);
+	t[i][j]->NoP_data_out[DIRECTION_SOUTH] (nop_data[i][south].south);
+	t[i][j]->NoP_data_out[DIRECTION_WEST] (nop_data[west][j].west);
+	
+	t[i][j]->NoP_data_in[DIRECTION_NORTH] (nop_data[i][j].south);
+	t[i][j]->NoP_data_in[DIRECTION_EAST] (nop_data[east][j].west);
+	t[i][j]->NoP_data_in[DIRECTION_SOUTH] (nop_data[i][j].north);
+	t[i][j]->NoP_data_in[DIRECTION_WEST] (nop_data[west][j].east);
+
+	cout << "Tile " << i << "," << j
+	<< " N:" << i << "," << north
+	<< " S:" << i << "," << south
+	<< " E:" << east << "," << j
+	<< " W:" << west << "," << j
+	<< endl;
+		}
+	}
+	// dummy NoP_data structure
+    NoP_data tmp_NoP;
+
+    tmp_NoP.sender_id = NOT_VALID;
+
+    for (int i = 0; i < DIRECTIONS; i++) {
+	tmp_NoP.channel_status_neighbor[i].free_slots = NOT_VALID;
+	tmp_NoP.channel_status_neighbor[i].available = false;
+}
+}
+
+
+void NoC::buildCommonPhotonic()
+{
+	char photonic_channel_name[16];
+	for (map<int, ChannelConfig>::iterator it = GlobalParams::channel_configuration.begin();
+		 it != GlobalParams::channel_configuration.end();
+		 ++it)
+	{
+		int photonic_channel_id = it->first;
+		sprintf(photonic_channel_name, "PhotonicChannel_%d", photonic_channel_id);
+		photonic_channel[photonic_channel_id] = new PhotonicChannel(photonic_channel_name, photonic_channel_id);
+	}
+
+	char hub_name[16];
+	for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
+		 it != GlobalParams::hub_configuration.end();
+		 ++it)
+	{
+		int hub_id = it->first;
+		//LOG << " hub id " <<  hub_id;
+		HubConfig hub_config = it->second;
+
+		sprintf(hub_name, "PhotonicHub_%d", hub_id);
+		hub[hub_id] = new PhotonicHub(hub_name, hub_id);
+		hub[hub_id]->clock(clock);
+		hub[hub_id]->reset(reset);
+
+
+		// Determine, from configuration file, which Hub is connected to which Tile
+		for(vector<int>::iterator iit = hub_config.attachedNodes.begin();
+			iit != hub_config.attachedNodes.end();
+			++iit)
+		{
+			GlobalParams::hub_for_tile[*iit] = hub_id;
+			//LOG<<"I am hub "<<hub_id<<" and I amconnecting to "<<*iit<<endl;
+
+		}
+		//for (map<int, int>::iterator it1 = GlobalParams::hub_for_tile.begin(); it1 != GlobalParams::hub_for_tile.end(); it1++ )
+		//LOG<<"it1 first "<< it1->first<< "second"<< it1->second<<endl;
+
+		// Determine, from configuration file, which Hub is connected to which Channel
+		for(vector<int>::iterator iit = hub_config.txChannels.begin();
+			iit != hub_config.txChannels.end();
+			++iit)
+		{
+			int photonic_channel_id = *iit;
+			//LOG << "Binding " << hub[hub_id]->name() << " to txChannel " << photonic_channel_id << endl;
+			hub[hub_id]->init[photonic_channel_id]->socket.bind(photonic_channel[photonic_channel_id]->targ_socket);
+			//LOG << "Binding " << hub[hub_id]->name() << " to txChannel " << photonic_channel_id << endl;
+			hub[hub_id]->setFlitTransmissionCycles(photonic_channel[photonic_channel_id]->getFlitTransmissionCycles(),photonic_channel_id);
+		}
+
+		for(vector<int>::iterator iit = hub_config.rxChannels.begin();
+			iit != hub_config.rxChannels.end();
+			++iit)
+		{
+			int photonic_channel_id = *iit;
+			//LOG << "Binding " << hub[hub_id]->name() << " to rxChannel " << photonic_channel_id << endl;
+			photonic_channel[photonic_channel_id]->init_socket.bind(hub[hub_id]->target[photonic_channel_id]->socket);
+			photonic_channel[photonic_channel_id]->addPhotonicHub(hub[hub_id]);
+		}
+
+		// TODO FIX
+		// Hub Power model does not currently support different data rates for single hub
+		// If multiple photonic_channels are connected to an Hub, the data rate
+		// of the first photonic_channel will be used as default
+
+		int no_photonic_channels = hub_config.txChannels.size();
+
+		int data_rate_gbs;
+
+		if (no_photonic_channels > 0) {
+			data_rate_gbs = GlobalParams::channel_configuration[hub_config.txChannels[0]].dataRate;
+		}
+		else
+			data_rate_gbs = NOT_VALID;
+
+		// TODO: update power model (configureHub to support different tx/tx buffer depth in the power breakdown
+		// Currently, an averaged value is used when accounting in Power class methods
+
+		hub[hub_id]->power.configureHub(GlobalParams::flit_size,
+										GlobalParams::hub_configuration[hub_id].toTileBufferSize,
+										GlobalParams::hub_configuration[hub_id].fromTileBufferSize,
+										GlobalParams::flit_size,
+										GlobalParams::hub_configuration[hub_id].rxBufferSize,
+										GlobalParams::hub_configuration[hub_id].txBufferSize,
+										GlobalParams::flit_size,
+										data_rate_gbs);
+	}
+
+
+	// Check for routing table availability
+	if (GlobalParams::routing_algorithm == ROUTING_TABLE_BASED)
+		assert(grtable.load(GlobalParams::routing_table_filename.c_str()));
+
+	// Check for traffic table availability
+	if (GlobalParams::traffic_distribution == TRAFFIC_TABLE_BASED)
+		assert(gttable.load(GlobalParams::traffic_table_filename.c_str()));
+
+	// Check for traffic hardcoded availability	
+	if (GlobalParams::traffic_distribution == TRAFFIC_HARDCODED)
+		assert(ghtable.load(GlobalParams::traffic_hardcoded_filename.c_str()));
+
+	// Var to track Hub connected ports
+	hub_connected_ports = (int *) calloc(GlobalParams::hub_configuration.size(), sizeof(int));
+
+}
+
 Tile *NoC::searchNode(const int id) const
 {
-    if (GlobalParams::topology == TOPOLOGY_MESH) 
+    if (GlobalParams::topology == TOPOLOGY_MESH || GlobalParams::topology == TOPOLOGY_TORUS) 
     {
 	for (int i = 0; i < GlobalParams::mesh_dim_x; i++)
 	    for (int j = 0; j < GlobalParams::mesh_dim_y; j++)

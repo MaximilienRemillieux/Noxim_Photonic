@@ -17,7 +17,9 @@
 #include "GlobalTrafficTable.h"
 #include "GlobalTrafficHardcoding.h"
 #include "Hub.h"
+#include "PhotonicHub.h"
 #include "Channel.h"
+#include "PhotonicChannel.h"
 #include "TokenRing.h"
 
 using namespace std;
@@ -82,6 +84,9 @@ SC_MODULE(NoC)
     map<int, Hub*> hub;
     map<int, Channel*> channel;
 
+    map<int, PhotonicHub*> photonic_hub;
+    map<int, PhotonicChannel*> photonic_channel;
+
     TokenRing* token_ring;
 
     // Global tables
@@ -105,6 +110,8 @@ SC_MODULE(NoC)
 	    buildBaseline();
 	else if (GlobalParams::topology == TOPOLOGY_OMEGA)
 	    buildOmega();
+    else if (GlobalParams::topology == TOPOLOGY_TORUS)
+        buildTorus(); // for now, we can build the hybrid mesh using the same method as the regular mesh, since the differences are mostly in the configuration of the hubs and channels, which is handled separately in GlobalParams
 	else {
 	    cerr << "ERROR: Topology " << GlobalParams::topology << " is not yet supported." << endl;
 	    exit(0);
@@ -130,7 +137,9 @@ SC_MODULE(NoC)
     void buildButterfly();
     void buildBaseline();
     void buildOmega();
+    void buildTorus();
     void buildCommon();
+    void buildCommonPhotonic();
     void asciiMonitor();
     int * hub_connected_ports;
 };
