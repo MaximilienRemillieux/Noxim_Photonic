@@ -1,0 +1,28 @@
+# Environnement Python / virtuel
+noxim_env/
+
+# Dossiers de build
+build/
+bin/
+
+# Fichiers compilés
+*.o
+*.a
+*.so
+*.out
+*.exe
+
+# Logs
+*.log
+
+# Fichiers de simulation
+*.vcd
+*.tr
+*.trace
+
+# Fichiers temporaires
+*~
+*.swp
+
+# OS
+.DS_Store
