@@ -72,6 +72,7 @@ void loadConfiguration() {
 
     GlobalParams::r2r_link_length = readParam<double>(config, "r2r_link_length");
     GlobalParams::r2h_link_length = readParam<double>(config, "r2h_link_length");
+    GlobalParams::r2ph_link_length = readParam<double>(config, "r2ph_link_length");
     GlobalParams::buffer_depth = readParam<int>(config, "buffer_depth");
     GlobalParams::flit_size = readParam<int>(config, "flit_size");
     GlobalParams::min_packet_size = readParam<int>(config, "min_packet_size");
@@ -96,7 +97,11 @@ void loadConfiguration() {
     //GlobalParams::hotspots;
     GlobalParams::show_buffer_stats = readParam<bool>(config, "show_buffer_stats");
     GlobalParams::use_winoc = readParam<bool>(config, "use_winoc");
+    GlobalParams::use_photonic = readParam<bool>(config, "use_photonic");
+    GlobalParams::use_wavelength_allocator = readParam<bool>(config, "use_wavelength_allocator", false);
+    GlobalParams::max_photonic_wavelengths = readParam<int>(config, "max_photonic_wavelengths");
     GlobalParams::winoc_dst_hops = readParam<int>(config, "winoc_dst_hops",0);
+    GlobalParams::pnoc_dst_hops = readParam<int>(config, "pnoc_dst_hops",0);
     GlobalParams::use_powermanager = readParam<bool>(config, "use_wirxsleep");
     
 
@@ -119,16 +124,7 @@ void loadConfiguration() {
         copy(GlobalParams::hub_configuration[hub_id].rxChannels.begin(), GlobalParams::hub_configuration[hub_id].rxChannels.end(), inserter(channelSet, channelSet.end()));
         copy(GlobalParams::hub_configuration[hub_id].txChannels.begin(), GlobalParams::hub_configuration[hub_id].txChannels.end(), inserter(channelSet, channelSet.end()));
     }
-    //My modification
-    // in ConfigurationManager::loadConfiguration(), just after the hub loop
-    cout << "loaded " << GlobalParams::hub_configuration.size()
-        << " hubs:\n";
-    for (auto &e : GlobalParams::hub_configuration) {
-        cout << "  hub " << e.first << " -> [";
-        for (int n : e.second.attachedNodes) cout << n << ' ';
-        cout << "]\n";
-    }
-    //My modification end
+
     YAML::Node default_channel_config_node = config["RadioChannels"]["defaults"];
     GlobalParams::default_channel_configuration = default_channel_config_node.as<ChannelConfig>();
 
@@ -149,7 +145,86 @@ void loadConfiguration() {
         GlobalParams::channel_configuration[channel_id] = channel_config_node.as<ChannelConfig>(); 
     }
 
+    // Photonic Hub specific params
+    set<int> photonicChannelSet;
+
+    GlobalParams::default_photonic_hub_configuration = config["PhotonicHubs"]["defaults"].as<PhotonicHubConfig>();
+    for(YAML::const_iterator photonic_hubs_it = config["PhotonicHubs"].begin(); 
+        photonic_hubs_it != config["PhotonicHubs"].end();
+        ++photonic_hubs_it)
+    {   
+        int hub_id = photonic_hubs_it->first.as<int>(-1);
+        if (hub_id < 0)
+            continue;
+
+        YAML::Node photonic_hub_config_node = photonic_hubs_it->second;
+
+        GlobalParams::photonic_hub_configuration[hub_id] = photonic_hub_config_node.as<PhotonicHubConfig>();
+
+        copy(GlobalParams::photonic_hub_configuration[hub_id].rxPhotonicChannels.begin(), GlobalParams::photonic_hub_configuration[hub_id].rxPhotonicChannels.end(), inserter(photonicChannelSet, photonicChannelSet.end()));
+        copy(GlobalParams::photonic_hub_configuration[hub_id].txPhotonicChannels.begin(), GlobalParams::photonic_hub_configuration[hub_id].txPhotonicChannels.end(), inserter(photonicChannelSet, photonicChannelSet.end()));
+    }
+    // affichage PhotonicHubConfig
+    cout << "PhotonicHubConfig:" << endl;
+    for (auto &it : GlobalParams::photonic_hub_configuration)
+    {
+        cout << "PhotonicHub ID: " << it.first << endl;
+
+        PhotonicHubConfig cfg = it.second;
+
+        cout << "  toTileBufferSizePhotonic: " << cfg.toTileBufferSizePhotonic << endl;
+        cout << "  fromTileBufferSizePhotonic: " << cfg.fromTileBufferSizePhotonic << endl;
+        cout << "  rxBufferSizePhotonic: " << cfg.rxBufferSizePhotonic << endl;
+        cout << "  txBufferSizePhotonic: " << cfg.txBufferSizePhotonic << endl;
+
+        cout << "  attachedNodesPhotonic: ";
+        for (auto n : cfg.attachedNodesPhotonic)
+            cout << n << " ";
+        cout << endl;
+
+        cout << "  rxPhotonicChannels: ";
+        for (auto c : cfg.rxPhotonicChannels)
+            cout << c << " ";
+        cout << endl;
+
+        cout << "  txPhotonicChannels: ";
+        for (auto c : cfg.txPhotonicChannels)
+            cout << c << " ";
+        cout << endl;
+
+        cout << "----------------------" << endl;
+    } //affichage PhotonicHubConfig end
+    
+    YAML::Node default_photonic_channel_config_node = config["PhotonicChannels"]["defaults"];
+    GlobalParams::default_photonic_channel_configuration = default_photonic_channel_config_node.as<PhotonicChannelConfig>();
+
+    for (set<int>::iterator it = photonicChannelSet.begin(); it != photonicChannelSet.end(); ++it) {
+        GlobalParams::photonic_channel_configuration[*it] = default_photonic_channel_config_node.as<PhotonicChannelConfig>();
+    }
+
+    for(YAML::const_iterator photonic_channels_it= config["PhotonicChannels"].begin(); 
+        photonic_channels_it != config["PhotonicChannels"].end();
+        ++photonic_channels_it)
+    {    
+        int channel_id = photonic_channels_it->first.as<int>(-1);
+        if (channel_id < 0)
+            continue;
+
+        YAML::Node photonic_channel_config_node = photonic_channels_it->second;
+
+        GlobalParams::photonic_channel_configuration[channel_id] = photonic_channel_config_node.as<PhotonicChannelConfig>(); 
+    }
+
+    // affichage PhotonicChannelConfig
+    cout << "PhotonicChannelConfig:" << endl;
+    for (auto &it : GlobalParams::photonic_channel_configuration)
+    {
+        cout << "PhotonicChannel ID: " << it.first << endl;
+    } //affichage PhotonicChannelConfig end
+
     GlobalParams::power_configuration = power_config["Energy"].as<PowerConfig>();
+
+    cout << "ConfigurationManager.cpp: All GlobalParams loaded" << endl;
 }
 
 void setBufferToTile(int depth)
@@ -199,6 +274,51 @@ void setBufferAntenna(int depth)
 
 }
 
+void setBufferToTilePhotonic(int depth)
+{
+    for(YAML::const_iterator photonic_hubs_it = config["PhotonicHubs"].begin(); photonic_hubs_it != config["PhotonicHubs"].end(); ++photonic_hubs_it)
+    {   
+        int hub_id = photonic_hubs_it->first.as<int>(-1);
+        if (hub_id < 0)
+            continue;
+
+        YAML::Node photonic_hub_config_node = photonic_hubs_it->second;
+
+    GlobalParams::photonic_hub_configuration[hub_id].toTileBufferSizePhotonic = depth;
+    }
+
+}
+
+void setBufferFromTilePhotonic(int depth)
+{
+    for(YAML::const_iterator photonic_hubs_it = config["PhotonicHubs"].begin(); photonic_hubs_it != config["PhotonicHubs"].end(); ++photonic_hubs_it)
+    {   
+        int hub_id = photonic_hubs_it->first.as<int>(-1);
+        if (hub_id < 0)
+            continue;
+
+        YAML::Node photonic_hub_config_node = photonic_hubs_it->second;
+
+    GlobalParams::photonic_hub_configuration[hub_id].fromTileBufferSizePhotonic = depth;
+    }
+
+}
+
+void setBufferPhotonic(int depth)
+{
+    for(YAML::const_iterator photonic_hubs_it = config["PhotonicHubs"].begin(); photonic_hubs_it != config["PhotonicHubs"].end(); ++photonic_hubs_it)
+    {   
+        int hub_id = photonic_hubs_it->first.as<int>(-1);
+        if (hub_id < 0)
+            continue;
+
+        YAML::Node photonic_hub_config_node = photonic_hubs_it->second;
+
+    GlobalParams::photonic_hub_configuration[hub_id].rxBufferSizePhotonic = depth;
+    GlobalParams::photonic_hub_configuration[hub_id].txBufferSizePhotonic = depth;
+    }
+
+}
 
 void showHelp(char selfname[])
 {
@@ -215,9 +335,10 @@ void showHelp(char selfname[])
          << "\t-buffer_tt N\t\tSet the depth of hub buffers to tile [flits]" << endl
          << "\t-buffer_ft N\t\tSet the depth of hub buffers to tile [flits]" << endl
          << "\t-buffer_antenna N\tSet the depth of hub antenna buffers (RX/TX) [flits]" << endl
-	 << "\t-vc N\t\t\tNumber of virtual channels" << endl
+	     << "\t-vc N\t\t\tNumber of virtual channels" << endl
          << "\t-winoc\t\t\tEnable radio hub wireless transmission" << endl
          << "\t-winoc_dst_hops\t\t\tMax number of hops between target RadioHub and destination node" << endl
+         << "\t-pnoc_dst_hops\t\t\tMax number of hops between target PhotonicHub and destination node" << endl
          << "\t-wirxsleep\t\tEnable radio hub wireless power manager" << endl
          << "\t-size Nmin Nmax\t\tSet the minimum and maximum packet size [flits]" << endl
          << "\t-flit N\t\t\tSet the flit size [bit]" << endl
@@ -308,6 +429,11 @@ void checkConfiguration()
 		if (GlobalParams::winoc_dst_hops>0)
 		{
 			cerr << "Error: winoc_dst_hops currently supported only in delta topologies" << endl;
+			exit(1);
+		}
+        if (GlobalParams::pnoc_dst_hops>0)
+		{
+			cerr << "Error: pnoc_dst_hops currently supported only in delta topologies" << endl;
 			exit(1);
 		}
 	}
@@ -499,6 +625,12 @@ void parseCmdLine(int arg_num, char *arg_vet[])
 		setBufferFromTile(atoi(arg_vet[++i]));
 	    else if (!strcmp(arg_vet[i], "-buffer_antenna"))
 		setBufferAntenna(atoi(arg_vet[++i]));
+        else if (!strcmp(arg_vet[i], "-buffer_tt_photonic"))
+        setBufferToTilePhotonic(atoi(arg_vet[++i]));
+        else if (!strcmp(arg_vet[i], "-buffer_ft_photonic"))
+        setBufferFromTilePhotonic(atoi(arg_vet[++i]));
+	    else if (!strcmp(arg_vet[i], "-buffer_photonic"))
+		setBufferPhotonic(atoi(arg_vet[++i]));
 	    else if (!strcmp(arg_vet[i], "-vc"))
 		GlobalParams::n_virtual_channels = (atoi(arg_vet[++i]));
 	    else if (!strcmp(arg_vet[i], "-flit"))
@@ -508,6 +640,10 @@ void parseCmdLine(int arg_num, char *arg_vet[])
 	    else if (!strcmp(arg_vet[i], "-winoc_dst_hops")) 
 	    {
             GlobalParams::winoc_dst_hops = atoi(arg_vet[++i]);
+	    }
+	    else if (!strcmp(arg_vet[i], "-pnoc_dst_hops")) 
+	    {
+            GlobalParams::pnoc_dst_hops = atoi(arg_vet[++i]);
 	    }
 	    else if (!strcmp(arg_vet[i], "-wirxsleep")) 
 	    {

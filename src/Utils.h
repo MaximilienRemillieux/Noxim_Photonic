@@ -234,7 +234,38 @@ inline int tile2Hub(int id)
     assert( (it != GlobalParams::hub_for_tile.end()) && "Specified Tile is not connected to any Hub");
     return it->second;
 }
+// Photonic Hub specific functions
 
+inline bool samePhotonicHub(int id1, int id2)
+{
+    map<int, int>::iterator it1 = GlobalParams::photonic_hub_for_tile.find(id1);
+    map<int, int>::iterator it2 = GlobalParams::photonic_hub_for_tile.find(id2);
+
+    if (it1 == GlobalParams::photonic_hub_for_tile.end() ||
+        it2 == GlobalParams::photonic_hub_for_tile.end())
+        return false;
+
+    return (it1->second == it2->second);
+}
+
+inline bool hasPhotonicHub(int id)
+{
+    map<int, int>::iterator it = GlobalParams::photonic_hub_for_tile.find(id);
+
+    return (it != GlobalParams::photonic_hub_for_tile.end());
+}
+
+inline bool isTileConnectedToPhotonicHub(int id)
+{
+    return hasPhotonicHub(id);
+}
+
+inline int tile2PhotonicHub(int id)
+{
+    map<int, int>::iterator it = GlobalParams::photonic_hub_for_tile.find(id); 
+    assert( (it != GlobalParams::photonic_hub_for_tile.end()) && "Specified Tile is not connected to any Photonic Hub");
+    return it->second;
+}
 
 inline void printMap(string label, const map<string,double> & m,std::ostream & out)
 {

@@ -64,27 +64,27 @@ struct Target: sc_module
 };
 
 
-/* Photonic Network Interface Pni */
+/* Photonic Network Interface */
 
 struct PhotonicHub;
 
-struct Target_Pni: sc_module
+struct TargetPhotonic: sc_module
 {
   // TLM-2 socket, defaults to 32-bits wide, base protocol
-  PhotonicHub* photonicub;
-  tlm_utils::simple_target_socket<Target_Pni> socket;
+  PhotonicHub* photonichub;
+  tlm_utils::simple_target_socket<TargetPhotonic> socket;
 
-  SC_HAS_PROCESS(Target_Pni);
+  SC_HAS_PROCESS(TargetPhotonic);
   int local_id;
 
   //SC_CTOR(Target)
   //: socket("socket")
-  Target_Pni(sc_module_name nm, int id, PhotonicHub* p): sc_module(nm), photonicub(p), socket("socket")
+  TargetPhotonic(sc_module_name nm, int id, PhotonicHub* p): sc_module(nm), photonichub(p), socket("socket")
   {
       local_id = id;
 
-    // Register callback for incoming b_transport interface method call
-      socket.register_b_transport(this, &Target_Pni::b_transport);
+    // Register callback for incoming b_transport_photonic interface method call
+      socket.register_b_transport(this, &TargetPhotonic::b_transport);
   }
 
   virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
@@ -100,6 +100,6 @@ struct Target_Pni: sc_module
 
 
 };
-/* Photonic Network Interface Pni */
+/* Photonic Network Interface */
 
 #endif

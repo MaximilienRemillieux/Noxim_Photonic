@@ -24,6 +24,7 @@
 
 using namespace std;
 
+// signal struct for connecting tiles in the NoC level (for mesh/torus and switch-only topologies)
 template <typename T>
 struct sc_signal_NSWE
 {
@@ -32,7 +33,7 @@ struct sc_signal_NSWE
     sc_signal<T> south;
     sc_signal<T> north;
 };
-
+// signal struct for connecting tiles to hubs and photonic hubs in the NoC level (for mesh/torus and switch-only topologies)
 template <typename T>
 struct sc_signal_NSWEH
 {
@@ -42,9 +43,11 @@ struct sc_signal_NSWEH
     sc_signal<T> north;
     sc_signal<T> to_hub;
     sc_signal<T> from_hub;
+    sc_signal<T> to_photonic_hub;
+    sc_signal<T> from_photonic_hub;
 };
 
-
+// Forward declaration of NoC SC_MODULE, since it is needed by the Tile and Hub classes
 SC_MODULE(NoC)
 {
     public: bool SwitchOnly; //true if the tile are switch only 
@@ -59,7 +62,7 @@ SC_MODULE(NoC)
     sc_signal_NSWEH<Flit> **flit;
     sc_signal_NSWE<int> **free_slots;
 
-    // NoP
+    // Neighbor-on-Path (NoP) signals for the NoP-based routing algorithms
     sc_signal_NSWE<NoP_data> **nop_data;
 
     //signals for connecting Core2Hub (just to test wireless in Butterfly)
@@ -75,15 +78,13 @@ SC_MODULE(NoC)
     sc_signal<TBufferFullStatus> *buffer_full_status_from_hub;
     sc_signal<TBufferFullStatus> *buffer_full_status_to_hub;
 
-
-
     // Matrix of tiles
     Tile ***t;
     Tile ** core;
-
+    // Matrix of hubs
     map<int, Hub*> hub;
     map<int, Channel*> channel;
-
+    // Matrix of photonic hubs
     map<int, PhotonicHub*> photonic_hub;
     map<int, PhotonicChannel*> photonic_channel;
 
@@ -93,7 +94,6 @@ SC_MODULE(NoC)
     GlobalRoutingTable grtable;
     GlobalTrafficTable gttable;
     GlobalTrafficHardcoding ghtable;
-
 
     // Constructor
 
@@ -142,6 +142,7 @@ SC_MODULE(NoC)
     void buildCommonPhotonic();
     void asciiMonitor();
     int * hub_connected_ports;
+    int * photonic_hub_connected_ports;
 };
 
 //Hub * dd;

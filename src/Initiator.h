@@ -20,6 +20,7 @@
 
 
 using namespace sc_core;
+
 using namespace std;
 
 struct Hub;
@@ -65,22 +66,23 @@ struct Initiator: sc_module
 };
 
 
-/*  Photonic Network Interface Pni */
+/*  Photonic Network Interface */
 struct PhotonicHub;
+struct InitiatorPhotonic: sc_module
 {
   PhotonicHub * photonichub;
   // TLM-2 socket, defaults to 32-bits wide, base protocol
-  tlm_utils::simple_initiator_socket<Initiator> socket;
+  tlm_utils::simple_initiator_socket<InitiatorPhotonic> socket;
 
-  SC_HAS_PROCESS(Initiator);
+  SC_HAS_PROCESS(InitiatorPhotonic);
 
-  //SC_CTOR(Initiator)
+  //SC_CTOR(InitiatorPhotonic)
   //: socket("socket")  // Construct and name socket
-  Initiator(sc_module_name nm,PhotonicHub* p): sc_module(nm),photonichub(p), socket("socket")
+  InitiatorPhotonic(sc_module_name nm,PhotonicHub* p): sc_module(nm),photonichub(p), socket("socket")
   {
 
-      int l;
-      if (GlobalParams::use_winoc) SC_THREAD(thread_process);
+    int l;
+    if (GlobalParams::use_photonic) SC_THREAD(thread_process);
       sscanf(nm,"init_%d",&l);
       _wavelength_id = l;
       current_wavelength_relay = NOT_VALID;
@@ -95,12 +97,12 @@ struct PhotonicHub;
   sc_event start_request_event;
 
   Buffer buffer_tx;
-  Flit flit_payload; 
+  Flit flit_payload;
 
-    private: 
-  int _wavelength_id;
-  int current_wavelength_relay;
+  private:
+    int _wavelength_id;
+    int current_wavelength_relay;
 };
-/*  Photonic Network Interface Pni  */
+/*  Photonic Network Interface */
 
 #endif

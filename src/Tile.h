@@ -20,21 +20,20 @@ SC_MODULE(Tile)
 {
     SC_HAS_PROCESS(Tile);
 
-    
+
 
     // I/O Ports
     sc_in_clk clock;		                // The input clock for the tile
     sc_in <bool> reset;	                        // The reset signal for the tile
 
     int local_id; // Unique ID
-// My modification j'ai ajouter + 2 à chaque tableau input channel, output channel, NoP related I/O pour inclure les ports locaux et hub
-    // The tile has mesh directions plus local and hub ports
-    sc_in <Flit> flit_rx[DIRECTIONS];	// The input channels (N,E,S,W,LOCAL,HUB)
+	// The tile has mesh directions plus local and hub ports
+    sc_in <Flit> flit_rx[DIRECTIONS];	// The input channels (N,E,S,W)
     sc_in <bool> req_rx[DIRECTIONS];	        // Requests for input channels
     sc_out <bool> ack_rx[DIRECTIONS];	        // Acks for input channels
     sc_out <TBufferFullStatus> buffer_full_status_rx[DIRECTIONS];
 
-    sc_out <Flit> flit_tx[DIRECTIONS];	// The output channels (N,E,S,W,LOCAL,HUB)
+    sc_out <Flit> flit_tx[DIRECTIONS];	// The output channels (N,E,S,W)
     sc_out <bool> req_tx[DIRECTIONS];	        // Requests for output channels
     sc_in <bool> ack_tx[DIRECTIONS];	        // Ack signals for output channels
     sc_in <TBufferFullStatus> buffer_full_status_tx[DIRECTIONS];
@@ -50,6 +49,16 @@ SC_MODULE(Tile)
     sc_in <bool> hub_ack_tx;	        // The outgoing ack signals associated with the output channels
     sc_in <TBufferFullStatus> hub_buffer_full_status_tx;	
 
+    // Photonic_hub specific ports
+    sc_in <Flit> photonic_hub_flit_rx;	// The input channels
+    sc_in <bool> photonic_hub_req_rx;	        // The requests associated with the input channels
+    sc_out <bool> photonic_hub_ack_rx;	        // The outgoing ack signals associated with the input channels
+    sc_out <TBufferFullStatus> photonic_hub_buffer_full_status_rx;
+
+    sc_out <Flit> photonic_hub_flit_tx;	// The output channels
+    sc_out <bool> photonic_hub_req_tx;	        // The requests associated with the output channels
+    sc_in <bool> photonic_hub_ack_tx;	        // The outgoing ack signals associated with the output channels
+    sc_in <TBufferFullStatus> photonic_hub_buffer_full_status_tx;	
 
     // NoP related I/O and signals
     sc_out <int> free_slots[DIRECTIONS];
@@ -80,7 +89,7 @@ SC_MODULE(Tile)
 
     Tile(sc_module_name nm, int id): sc_module(nm) {
     local_id = id;
-	
+	//cout << "Tile.cpp: Local_id = " << local_id << endl;
     // Router pin assignments
 	r = new Router("Router");
 	r->clock(clock);
@@ -104,7 +113,7 @@ SC_MODULE(Tile)
 	    r->NoP_data_out[i] (NoP_data_out[i]);
 	    r->NoP_data_in[i] (NoP_data_in[i]);
 	}
-	
+	//cout << "Tile.h: Binding router directions NSEW" << endl;
 	// local
 	r->flit_rx[DIRECTION_LOCAL] (flit_tx_local);
 	r->req_rx[DIRECTION_LOCAL] (req_tx_local);
@@ -115,7 +124,7 @@ SC_MODULE(Tile)
 	r->req_tx[DIRECTION_LOCAL] (req_rx_local);
 	r->ack_tx[DIRECTION_LOCAL] (ack_rx_local);
 	r->buffer_full_status_tx[DIRECTION_LOCAL] (buffer_full_status_rx_local);
-
+	//cout << "Tile.h: Binding router directions Local" << endl;
 
 	// hub related
 	r->flit_rx[DIRECTION_HUB] (hub_flit_rx);
@@ -127,7 +136,19 @@ SC_MODULE(Tile)
 	r->req_tx[DIRECTION_HUB] (hub_req_tx);
 	r->ack_tx[DIRECTION_HUB] (hub_ack_tx);
 	r->buffer_full_status_tx[DIRECTION_HUB] (hub_buffer_full_status_tx);
+	//cout << "Tile.h: Binding router directions Hub" << endl;
 
+	// Photonic_hub related
+	r->flit_rx[DIRECTION_PHOTONIC_HUB] (photonic_hub_flit_rx);
+	r->req_rx[DIRECTION_PHOTONIC_HUB] (photonic_hub_req_rx);
+	r->ack_rx[DIRECTION_PHOTONIC_HUB] (photonic_hub_ack_rx);
+	r->buffer_full_status_rx[DIRECTION_PHOTONIC_HUB] (photonic_hub_buffer_full_status_rx);
+
+	r->flit_tx[DIRECTION_PHOTONIC_HUB] (photonic_hub_flit_tx);
+	r->req_tx[DIRECTION_PHOTONIC_HUB] (photonic_hub_req_tx);
+	r->ack_tx[DIRECTION_PHOTONIC_HUB] (photonic_hub_ack_tx);
+	r->buffer_full_status_tx[DIRECTION_PHOTONIC_HUB] (photonic_hub_buffer_full_status_tx);
+	//cout << "Tile.h: Binding router directions Photonic_Hub" << endl;
 
 	// Processing Element pin assignments
 	pe = new ProcessingElement("ProcessingElement");
@@ -138,7 +159,6 @@ SC_MODULE(Tile)
 	pe->req_rx(req_rx_local);
 	pe->ack_rx(ack_rx_local);
 	pe->buffer_full_status_rx(buffer_full_status_rx_local);
-	
 
 	pe->flit_tx(flit_tx_local);
 	pe->req_tx(req_tx_local);
@@ -150,6 +170,7 @@ SC_MODULE(Tile)
 	r->free_slots[DIRECTION_LOCAL] (free_slots_local);
 	r->free_slots_neighbor[DIRECTION_LOCAL] (free_slots_neighbor_local);
 	pe->free_slots_neighbor(free_slots_neighbor_local);
+	//cout << "Tile.h: Binding PE" << endl;
 
     }
 

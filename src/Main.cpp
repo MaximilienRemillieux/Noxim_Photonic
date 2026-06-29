@@ -15,6 +15,7 @@
 #include "GlobalParams.h"
 
 #include <csignal>
+#include <ctime>
 
 using namespace std;
 
@@ -49,6 +50,19 @@ int sc_main(int arg_num, char *arg_vet[])
     cout << endl;
     cout << endl;
 
+    time_t now = time(0);
+    tm *ltm = localtime(&now);
+
+    cout << "Simulation du "
+        << std::setfill('0') << std::setw(2) << ltm->tm_mday << "/"
+        << std::setw(2) << (ltm->tm_mon + 1) << "/"
+        << (1900 + ltm->tm_year)
+        << " --- "
+        << std::setw(2) << ltm->tm_hour << ":"
+        << std::setw(2) << ltm->tm_min << ":"
+        << std::setw(2) << ltm->tm_sec
+        << endl << endl;
+
     configure(arg_num, arg_vet);
 
 
@@ -61,7 +75,7 @@ int sc_main(int arg_num, char *arg_vet[])
 
     n->clock(clock);
     n->reset(reset);
-
+    cout << "Main.cpp: Noc loaded" << endl;
     // Trace signals
     sc_trace_file *tf = NULL;
     if (GlobalParams::trace_mode) {
@@ -100,6 +114,7 @@ int sc_main(int arg_num, char *arg_vet[])
 
     // fix clock periods different from 1ns
     //sc_start(GlobalParams::reset_time, SC_NS);
+    sc_report_handler::set_actions(SC_ID_COMPLETE_BINDING_, SC_DISPLAY);
     sc_start(GlobalParams::reset_time * GlobalParams::clock_period_ps, SC_PS);
 
     reset.write(0);

@@ -74,6 +74,52 @@ namespace YAML {
             return true;
         }
     };
+    // Photonic Hub specific decoders
+    template<>
+    struct convert<PhotonicHubConfig> {
+        static Node encode(const PhotonicHubConfig& photonicHubConfig) {
+            Node node;
+            node["attached_nodes_photonic"] = photonicHubConfig.attachedNodesPhotonic;
+            node["rx_photonic_channels"] = photonicHubConfig.rxPhotonicChannels;
+            node["tx_photonic_channels"] = photonicHubConfig.txPhotonicChannels;
+            node["to_tile_buffer_size_photonic"] = photonicHubConfig.toTileBufferSizePhotonic;
+            node["from_tile_buffer_size_photonic"] = photonicHubConfig.fromTileBufferSizePhotonic;
+            node["tx_buffer_size_photonic"] = photonicHubConfig.txBufferSizePhotonic;
+            node["rx_buffer_size_photonic"] = photonicHubConfig.rxBufferSizePhotonic;
+            node["wavelengths"] = photonicHubConfig.wavelengths;
+            return node;
+        }
+
+        static bool decode(const Node& node, PhotonicHubConfig& photonicHubConfig) {
+            photonicHubConfig.attachedNodesPhotonic = node["attached_nodes_photonic"].as<vector<int> >(GlobalParams::default_photonic_hub_configuration.attachedNodesPhotonic);
+            photonicHubConfig.rxPhotonicChannels = node["rx_photonic_channels"].as<vector<int> >(GlobalParams::default_photonic_hub_configuration.rxPhotonicChannels);
+            photonicHubConfig.txPhotonicChannels = node["tx_photonic_channels"].as<vector<int> >(GlobalParams::default_photonic_hub_configuration.txPhotonicChannels);
+            photonicHubConfig.toTileBufferSizePhotonic = node["to_tile_buffer_size_photonic"].as<int>(GlobalParams::default_photonic_hub_configuration.toTileBufferSizePhotonic);
+            photonicHubConfig.fromTileBufferSizePhotonic = node["from_tile_buffer_size_photonic"].as<int>(GlobalParams::default_photonic_hub_configuration.fromTileBufferSizePhotonic);
+            photonicHubConfig.txBufferSizePhotonic = node["tx_buffer_size_photonic"].as<int>(GlobalParams::default_photonic_hub_configuration.txBufferSizePhotonic);
+            photonicHubConfig.rxBufferSizePhotonic = node["rx_buffer_size_photonic"].as<int>(GlobalParams::default_photonic_hub_configuration.rxBufferSizePhotonic);
+            photonicHubConfig.wavelengths = node["wavelengths"].as<vector<int> >(GlobalParams::default_photonic_hub_configuration.wavelengths);
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<PhotonicChannelConfig> {
+        static Node encode(const PhotonicChannelConfig& photonicChannelConfig) {
+            Node node;
+            node["ber"] = photonicChannelConfig.ber;
+            node["data_rate"] = photonicChannelConfig.dataRate;
+            node["wavelength_policy"] = photonicChannelConfig.wavelengthPolicy;
+            return node;
+        }
+
+        static bool decode(const Node& node, PhotonicChannelConfig& photonicChannelConfig) {
+            photonicChannelConfig.ber = node["ber"].as<pair<double, double> >(GlobalParams::default_photonic_channel_configuration.ber);
+            photonicChannelConfig.dataRate = node["data_rate"].as<int>(GlobalParams::default_photonic_channel_configuration.dataRate);
+            photonicChannelConfig.wavelengthPolicy = node["wavelength_policy"].as<vector<string> >(GlobalParams::default_photonic_channel_configuration.wavelengthPolicy);
+            return true;
+        }
+    };
 
     template<>
     struct convert<BufferPowerConfig> {
@@ -172,12 +218,25 @@ namespace YAML {
     };
     
     template<>
+    struct convert<PhotonicHubPowerConfig> {
+        static bool decode(const Node& node, PhotonicHubPowerConfig& photonicHubPowerConfig) {
+            photonicHubPowerConfig.modulator_leakage = node["modulator_leakage"].as<pair<double, double> >();
+            photonicHubPowerConfig.modulator_biasing = node["modulator_biasing"].as<pair<double, double> >();
+            photonicHubPowerConfig.rx_dynamic = node["rx_dynamic"].as<double>();
+            photonicHubPowerConfig.default_tx_energy = node["default_tx_energy"].as<double>();
+
+            return true;
+        }
+    };
+
+    template<>
     struct convert<PowerConfig> {
         static bool decode(const Node& node, PowerConfig& powerConfig) {
             powerConfig.bufferPowerConfig = node["Buffer"].as<BufferPowerConfig>();
             powerConfig.linkBitLinePowerConfig = node["LinkBitLine"].as<LinkBitLinePowerConfig>();
             powerConfig.routerPowerConfig = node["Router"].as<RouterPowerConfig>();
             powerConfig.hubPowerConfig = node["Hub"].as<HubPowerConfig>();
+            powerConfig.photonicHubPowerConfig = node["PhotonicHub"].as<PhotonicHubPowerConfig>();
             return true;
         }
     };

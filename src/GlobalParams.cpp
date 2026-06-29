@@ -23,6 +23,7 @@ int GlobalParams::n_delta_tiles;
 
 double GlobalParams::r2r_link_length;
 double GlobalParams::r2h_link_length;
+double GlobalParams::r2ph_link_length;
 int GlobalParams::buffer_depth;
 int GlobalParams::flit_size;
 int GlobalParams::min_packet_size;
@@ -50,13 +51,26 @@ unsigned int GlobalParams::max_volume_to_be_drained;
 vector <pair <int, double> > GlobalParams::hotspots;
 bool GlobalParams::show_buffer_stats;
 bool GlobalParams::use_winoc;
+bool GlobalParams::use_photonic;
 int GlobalParams::winoc_dst_hops;
+int GlobalParams::pnoc_dst_hops;
 bool GlobalParams::use_powermanager;
 ChannelConfig GlobalParams::default_channel_configuration;
 map<int, ChannelConfig> GlobalParams::channel_configuration;
 HubConfig GlobalParams::default_hub_configuration;
 map<int, HubConfig> GlobalParams::hub_configuration;
 map<int, int> GlobalParams::hub_for_tile;
+// Photonic Hub specific params
+PhotonicChannelConfig GlobalParams::default_photonic_channel_configuration;
+map<int, PhotonicChannelConfig> GlobalParams::photonic_channel_configuration;
+PhotonicHubConfig GlobalParams::default_photonic_hub_configuration;
+map<int, PhotonicHubConfig> GlobalParams::photonic_hub_configuration;
+map<int,int> GlobalParams::photonic_hub_for_tile;
+
+// Wavelength (ORNoC) allocation parameters
+bool GlobalParams::use_wavelength_allocator;
+int GlobalParams::max_photonic_wavelengths;
+
 PowerConfig GlobalParams::power_configuration;
 // out of yaml configuration
 bool GlobalParams::ascii_monitor;

@@ -344,6 +344,26 @@ unsigned int GlobalStats::getWirelessPackets()
     return packets;
 }
 
+// Photonic packets number of packets that used the photonic network
+unsigned int GlobalStats::getPhotonicPackets()
+{
+	unsigned int packets = 0;
+	
+	// Photonic noc
+	for (map<int, PhotonicHubConfig>::iterator it = GlobalParams::photonic_hub_configuration.begin();
+			it != GlobalParams::photonic_hub_configuration.end();
+			++it)
+	{
+		int photonic_hub_id = it->first;
+
+		map<int,PhotonicHub*>::const_iterator i = noc->photonic_hub.find(photonic_hub_id);
+		PhotonicHub * ph = i->second;
+
+		packets+= ph->photonic_communications_counter;
+	}
+	return packets;
+}
+
 double GlobalStats::getDynamicPower()
 {
     double power = 0.0;
@@ -510,6 +530,9 @@ void GlobalStats::showStats(std::ostream & out, bool detailed)
     out << "% Total received flits: " << getReceivedFlits() << endl;
     out << "% Received/Ideal flits Ratio: " << getReceivedIdealFlitRatio() << endl;
     out << "% Average wireless utilization: " << getWirelessPackets()/(double)getReceivedPackets() << endl;
+	out << "% Number of packets using wireless network: " << getWirelessPackets() << endl;
+	out << "% Average photonic utilization: " << getPhotonicPackets()/(double)getReceivedPackets() << endl;
+	out << "% Number of packets using photonic network: " << getPhotonicPackets() << endl;
     out << "% Global average delay (cycles): " << getAverageDelay() << endl;
     out << "% Max delay (cycles): " << getMaxDelay() << endl;
     out << "% Network throughput (flits/cycle): " << getAggregatedThroughput() << endl;
@@ -692,7 +715,6 @@ void GlobalStats::showBufferStats(std::ostream & out)
 			out << endl;
      	}
     }
-
 }
 
 double GlobalStats::getReceivedIdealFlitRatio()

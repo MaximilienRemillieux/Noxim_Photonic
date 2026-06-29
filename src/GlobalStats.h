@@ -66,6 +66,8 @@ class GlobalStats {
     // number of packets that used the wireless network
     unsigned int getWirelessPackets();
 
+    // Photonic packets number of packets that used the photonic network
+    unsigned int getPhotonicPackets();
 
     // Returns the number of routed flits for each router
      vector < vector < unsigned long > > getRoutedFlitsMtx();

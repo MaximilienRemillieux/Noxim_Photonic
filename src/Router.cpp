@@ -27,20 +27,20 @@ void Router::rxProcess()
     if (reset.read()) {
 	TBufferFullStatus bfs;
 	// Clear outputs and indexes of receiving protocol
-	for (int i = 0; i < DIRECTIONS + 2; i++) {
+	for (int i = 0; i < DIRECTIONS + 2 + 1; i++) {
 	    ack_rx[i].write(0);
 	    current_level_rx[i] = 0;
 	    buffer_full_status_rx[i].write(bfs);
 	}
 	routed_flits = 0;
 	local_drained = 0;
-    } 
+    }
     else 
-    { 
+    {
 	// This process simply sees a flow of incoming flits. All arbitration
 	// and wormhole related issues are addressed in the txProcess()
 	//assert(false);
-	for (int i = 0; i < DIRECTIONS + 2; i++) {
+	for (int i = 0; i < DIRECTIONS + 2 + 1; i++) {
 	    // To accept a new flit, the following conditions must match:
 	    // 1) there is an incoming request
 	    // 2) there is a free slot in the input buffer of direction i
@@ -51,7 +51,7 @@ void Router::rxProcess()
 	    //}
 
 	    if (req_rx[i].read() == 1 - current_level_rx[i])
-	    { 
+	    {
 		Flit received_flit = flit_rx[i].read();
 		//LOG<<"request opposite to the current_level, reading flit "<<received_flit<<endl;
 
@@ -100,7 +100,7 @@ void Router::txProcess()
   if (reset.read()) 
     {
       // Clear outputs and indexes of transmitting protocol
-      for (int i = 0; i < DIRECTIONS + 2; i++) 
+      for (int i = 0; i < DIRECTIONS + 2 + 1; i++) 
 	{
 	  req_tx[i].write(0);
 	  current_level_tx[i] = 0;
@@ -109,9 +109,9 @@ void Router::txProcess()
   else 
     { 
       // 1st phase: Reservation
-      for (int j = 0; j < DIRECTIONS + 2; j++) 
+      for (int j = 0; j < DIRECTIONS + 2 + 1; j++) 
 	{
-	  int i = (start_from_port + j) % (DIRECTIONS + 2);
+	  int i = (start_from_port + j) % (DIRECTIONS + 2 + 1);
 
 	  for (int k = 0;k < GlobalParams::n_virtual_channels; k++)
 	  {
@@ -151,6 +151,15 @@ void Router::txProcess()
 		      	o = DIRECTION_HUB;
 			  }
 
+			// manage special case of target photonic_hub not directly connected to destination
+		      if (o>=DIRECTION_PHOTONIC_HUB_RELAY)
+			  {
+		      	Flit f = buffer[i][vc].Pop();
+		      	f.hub_relay_node = o-DIRECTION_PHOTONIC_HUB_RELAY;
+		      	buffer[i][vc].Push(f);
+		      	o = DIRECTION_PHOTONIC_HUB;
+			  }
+			
 		      TReservation r;
 		      r.input = i;
 		      r.vc = vc;
@@ -184,11 +193,11 @@ void Router::txProcess()
 	    start_from_vc[i] = (start_from_vc[i]+1)%GlobalParams::n_virtual_channels;
 	}
 
-      start_from_port = (start_from_port + 1) % (DIRECTIONS + 2);
+      start_from_port = (start_from_port + 1) % (DIRECTIONS + 2 + 1);
 
       // 2nd phase: Forwarding
       //if (local_id==6) LOG<<"*TX*****local_id="<<local_id<<"__ack_tx[0]= "<<ack_tx[0].read()<<endl;
-      for (int i = 0; i < DIRECTIONS + 2; i++) 
+      for (int i = 0; i < DIRECTIONS + 2 + 1; i++) 
       { 
 	  vector<pair<int,int> > reservations = reservation_table.getReservations(i);
 	  
@@ -229,6 +238,7 @@ void Router::txProcess()
 
 		      /* Power & Stats ------------------------------------------------- */
 		      if (o == DIRECTION_HUB) power.r2hLink();
+			  else if (o == DIRECTION_PHOTONIC_HUB) power.r2phLink();
 		      else
 			  power.r2rLink();
 
@@ -452,11 +462,70 @@ vector < int > Router::routingFunction(const RouteData & route_data)
             }
 		}
 	}
+
+	// PHOTONIC routing only allowed with HUB_FIRST algorithm
+	if (GlobalParams::use_photonic && GlobalParams::routing_algorithm == "HUB_FIRST")
+	{
+		// - If the current node C and the destination D are connected to an photonic hub, use wireless
+		// - If D is not directly connected to a photonic hub, wireless
+		// communication can still  be used if some intermediate node "I" in the routing
+		// path is reachable from current node C.
+		// - Since further wired hops will be required from I -> D, a threshold "winoc_dst_hops"
+		// can be specified (via command line) to determine the max distance from the intermediate
+		// node I and the destination D.
+		// - NOTE: default threshold is 0, which means I=D, i.e., we explicitly ask the destination D to be connected to the
+		// target photonic hub
+		if (hasPhotonicHub(local_id))
+		{
+			// Check if destination is directly connected to an photonic_hub
+			if ( hasPhotonicHub(route_data.dst_id) &&
+				 !samePhotonicHub(local_id,route_data.dst_id) )
+			{
+                map<int, int>::iterator it1 = GlobalParams::photonic_hub_for_tile.find(route_data.dst_id);
+                map<int, int>::iterator it2 = GlobalParams::photonic_hub_for_tile.find(route_data.current_id);
+
+                if (connectedPhotonicHubs(it1->second,it2->second))
+                {
+                    LOG << "[ROUTING] HUB_FIRST: Using PHOTONIC_HUB path (direct) src=" << route_data.src_id << " dst=" << route_data.dst_id << endl;
+                    vector<int> dirv;
+                    dirv.push_back(DIRECTION_PHOTONIC_HUB);
+                    return dirv;
+                }
+			}
+			// let's check whether some node in the route has an acceptable distance to the dst
+            if (GlobalParams::pnoc_dst_hops>0)
+            {
+                // TODO: for the moment, just print the set of nexts hops to check everything is ok
+                LOG << "NEXT_DELTA_HOPS (from node " << route_data.src_id << " to " << route_data.dst_id << ") >>>> :";
+                vector<int> nexthops;
+                nexthops = nextDeltaHops(route_data);
+                //for (int i=0;i<nexthops.size();i++) cout << "(" << nexthops[i] <<")-->";
+                //cout << endl;
+                for (int i=1;i<=GlobalParams::pnoc_dst_hops;i++)
+				{
+                	int dest_position = nexthops.size()-1;
+                	int candidate_hop = nexthops[dest_position-i];
+					if ( hasPhotonicHub(candidate_hop) && !samePhotonicHub(local_id,candidate_hop) ) {
+						//LOG << "Checking candidate hop " << candidate_hop << " ... It's OK!" << endl;
+						LOG << "Relaying to pthotonic_hub-connected node " << candidate_hop << " to reach destination " << route_data.dst_id << endl;
+						vector<int> dirv;
+						dirv.push_back(DIRECTION_PHOTONIC_HUB_RELAY+candidate_hop);
+						return dirv;
+					}
+					//else
+					// LOG << "Checking candidate hop " << candidate_hop << " ... NOT OK" << endl;
+				}
+            }
+		}
+	}
 	// TODO: fix all the deprecated verbose mode logs
 	if (GlobalParams::verbose_mode > VERBOSE_OFF)
 		LOG << "Wired routing for dst = " << route_data.dst_id << endl;
 
-	// not wireless direction taken, apply normal routing
+	// Photonic path not taken or algorithm != HUB_FIRST, apply normal routing
+	LOG << "[ROUTING] Algorithm=" << GlobalParams::routing_algorithm 
+	    << " src=" << route_data.src_id << " dst=" << route_data.dst_id
+	    << " use_photonic=" << (GlobalParams::use_photonic ? "true" : "false") << endl;
 	return routingAlgorithm->route(this, route_data);
 }
 
@@ -529,18 +598,21 @@ void Router::configure(const int _id,
 
     start_from_port = DIRECTION_LOCAL;
   
+	//cout << "Router.cpp: Local_id = " << local_id << endl;
 
     if (grt.isValid())
 	routing_table.configure(grt, _id);
 
-    reservation_table.setSize(DIRECTIONS+2);
+    reservation_table.setSize(DIRECTIONS + 2 + 1);
 
-    for (int i = 0; i < DIRECTIONS + 2; i++)
+    for (int i = 0; i < DIRECTIONS + 2 + 1; i++)
     {
 	for (int vc = 0; vc < GlobalParams::n_virtual_channels; vc++)
 	{
 	    buffer[i][vc].SetMaxBufferSize(_max_buffer_size);
 	    buffer[i][vc].setLabel(string(name())+"->buffer["+i_to_string(i)+"]");
+		//cout << "Router.cpp: Starting to build Router configure, set virtuals channels for "
+		//	"Directions " << i << endl;
 	}
 	start_from_vc[i] = 0;
     }
@@ -641,7 +713,7 @@ bool Router::inCongestion()
 
 void Router::ShowBuffersStats(std::ostream & out)
 {
-  for (int i=0; i<DIRECTIONS+2; i++)
+  for (int i=0; i<DIRECTIONS + 2 + 1; i++)
       for (int vc=0; vc<GlobalParams::n_virtual_channels;vc++)
 	    buffer[i][vc].ShowStats(out);
 }
@@ -663,6 +735,25 @@ bool Router::hasHubPort() const {
 bool Router::connectedHubs(int src_hub, int dst_hub) {
     vector<int> &first = GlobalParams::hub_configuration[src_hub].txChannels;
     vector<int> &second = GlobalParams::hub_configuration[dst_hub].rxChannels;
+
+    vector<int> intersection;
+
+    for (unsigned int i = 0; i < first.size(); i++) {
+        for (unsigned int j = 0; j < second.size(); j++) {
+            if (first[i] == second[j])
+                intersection.push_back(first[i]);
+        }
+    }
+
+    if (intersection.size() == 0)
+        return false;
+    else
+        return true;
+}
+
+bool Router::connectedPhotonicHubs(int src_hub, int dst_hub) {
+    vector<int> &first = GlobalParams::photonic_hub_configuration[src_hub].txPhotonicChannels;
+    vector<int> &second = GlobalParams::photonic_hub_configuration[dst_hub].rxPhotonicChannels;
 
     vector<int> intersection;
 

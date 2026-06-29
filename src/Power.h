@@ -29,10 +29,10 @@ class Power {
 
 
     void configureRouter(int link_width,
-	                 int buffer_depth,
-			 int buffer_item_size,
-			 string routing_function,
-			 string selection_function);
+	    int buffer_depth,
+			int buffer_item_size,
+			string routing_function,
+			string selection_function);
 
     void configureHub(int link_width, 
 	        int buffer_to_tile_depth, 
@@ -41,6 +41,15 @@ class Power {
 		      int antenna_buffer_rx_depth, 
 		      int antenna_buffer_tx_depth, 
 		      int antenna_buffer_item_size, 
+		      int data_rate_gbs);
+
+    void configurePhotonicHub(int link_width, 
+	        int buffer_to_tile_depth, 
+	        int buffer_from_tile_depth, 
+		      int buffer_item_size, 
+		      int photonic_buffer_rx_depth, 
+		      int photonic_buffer_tx_depth, 
+		      int photonic_buffer_item_size, 
 		      int data_rate_gbs);
 
     void bufferRouterPush(); 
@@ -52,6 +61,7 @@ class Power {
     void bufferFromTilePush(); 
     void bufferFromTilePop(); 
     void bufferFromTileFront(); 
+
     void antennaBufferPush();
     void antennaBufferPop();
 
@@ -59,11 +69,19 @@ class Power {
     void wirelessTx(int src,int dst,int length);
     void wirelessDynamicRx();
     void wirelessSnooping();
+    
+    // Photonic specific
+    void photonicBufferPush();
+    void photonicBufferPop();
+    void photonicBufferFront();
+    void photonicTx(int src,int dst,int length);
+    void photonicDynamicRx();
 
     void routing();
     void selection(); 
     void crossBar(); 
     void r2hLink(); 
+    void r2phLink(); // Photonic specific
     void r2rLink(); 
     void networkInterface();
 
@@ -71,11 +89,15 @@ class Power {
     void leakageBufferToTile();
     void leakageBufferFromTile();
     void leakageAntennaBuffer();
+    void leakagePhotonicBuffer(); // Photonic specific
     void leakageLinkRouter2Router();
     void leakageLinkRouter2Hub();
+    void leakageLinkRouter2PhotonicHub(); // Photonic specific
     void leakageRouter();
     void leakageTransceiverRx();
     void leakageTransceiverTx();
+    void leakageModulatorTx(); // Photonic specific
+    void leakagephotodetectorRx(); // Photonic specific
     void biasingRx();
     void biasingTx();
 
@@ -120,6 +142,13 @@ class Power {
     double antenna_buffer_front_pwr_d;
     double antenna_buffer_pwr_s;
 
+    // Photonic specific
+    double photonic_buffer_push_pwr_d;
+    double photonic_buffer_pop_pwr_d;
+    double photonic_buffer_front_pwr_d;
+    double photonic_buffer_pwr_s;
+    double photonic_rx_pwr;
+
     double wireless_rx_pwr;
     double transceiver_tx_pwr_s;
     double transceiver_rx_pwr_s;
@@ -142,6 +171,9 @@ class Power {
     double link_r2r_pwr_s;
     double link_r2h_pwr_s;
     double link_r2h_pwr_d;
+    // PHotonic specific
+    double link_r2ph_pwr_s;
+    double link_r2ph_pwr_d;
 
     double ni_pwr_d;
     double ni_pwr_s;

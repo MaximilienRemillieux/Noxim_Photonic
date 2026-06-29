@@ -69,8 +69,8 @@ SC_MODULE(Hub)
     int start_from_port; // Port from which to start the reservation cycle
     int * start_from_vc; // VC from which to start the reservation cycle for the specific port
 
-    ReservationTable antenna2tile_reservation_table;	// Switch reservation table
-    ReservationTable tile2antenna_reservation_table;// Wireless reservation table
+    ReservationTable antenna2tile_reservation_table;  // Switch reservation table
+    ReservationTable tile2antenna_reservation_table;  // Wireless reservation table
 
     void updateRxPower();
     void updateTxPower();
@@ -111,17 +111,17 @@ SC_MODULE(Hub)
 	}
 
         local_id = id;
-	token_ring = tr;
+	    token_ring = tr;
         num_ports = GlobalParams::hub_configuration[local_id].attachedNodes.size();
         attachedNodes = GlobalParams::hub_configuration[local_id].attachedNodes;
         rxChannels = GlobalParams::hub_configuration[local_id].rxChannels;
         txChannels = GlobalParams::hub_configuration[local_id].txChannels;
 
-	antenna2tile_reservation_table.setSize(num_ports);
-	// fix this
-	//tile2antenna_reservation_table.setSize(txChannels.size());
-#define STATIC_MAX_CHANNELS 100
-      tile2antenna_reservation_table.setSize(STATIC_MAX_CHANNELS);
+	    antenna2tile_reservation_table.setSize(num_ports);
+	    // fix this
+	    //tile2antenna_reservation_table.setSize(txChannels.size());
+        #define STATIC_MAX_CHANNELS 100
+        tile2antenna_reservation_table.setSize(STATIC_MAX_CHANNELS);
 
         flit_rx = new sc_in<Flit>[num_ports];
         req_rx = new sc_in<bool>[num_ports];
@@ -136,7 +136,7 @@ SC_MODULE(Hub)
         buffer_from_tile = new BufferBank[num_ports];
         buffer_to_tile = new BufferBank[num_ports];
         
-	start_from_vc = new int[num_ports];
+	    start_from_vc = new int[num_ports];
 
 
         current_level_rx = new bool[num_ports];
@@ -157,7 +157,7 @@ SC_MODULE(Hub)
         }
 
         for (unsigned int i = 0; i < txChannels.size(); i++) {
-            char txt[20];
+            char txt[50];
             int ch = txChannels[i];
             sprintf(txt, "init_%d", ch);
             init[ch] = new Initiator(txt,this);

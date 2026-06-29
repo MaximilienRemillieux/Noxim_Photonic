@@ -111,6 +111,10 @@ Flit ProcessingElement::nextFlit()
     //  flit.payload     = DEFAULT_PAYLOAD;
 
     flit.hub_relay_node = NOT_VALID;
+    
+    // Initialize photonic wavelength allocation fields (ORNoC)
+    flit.wavelength_id = -1;
+    flit.photonic_ring_id = -1;
 
     if (packet.size == packet.flit_left)
 	flit.flit_type = FLIT_TYPE_HEAD;

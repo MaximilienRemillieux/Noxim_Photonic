@@ -1,0 +1,309 @@
+topology: MESH
+mesh_dim_x: 8
+mesh_dim_y: 8
+buffer_depth: 32
+flit_size: 16
+r2h_link_length: 2.0
+r2ph_link_length: 2.0
+r2r_link_length: 1.0
+n_virtual_channels: 1
+routing_algorithm: HUB_FIRST
+routing_table_filename: ''
+dyad_threshold: 0.6
+selection_strategy: BUFFER_LEVEL
+Hubs: null
+RadioChannels:
+  defaults:
+    data_rate: 100
+    ber:
+    - 0
+    - 0
+    mac_policy:
+    - TOKEN_PACKET
+PhotonicHubs:
+  0:
+    attached_nodes_photonic:
+    - 0
+    - 1
+    - 8
+    - 9
+    rx_photonic_channels:
+    - 1
+    - 4
+    tx_photonic_channels:
+    - 1
+    - 4
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  1:
+    attached_nodes_photonic:
+    - 2
+    - 3
+    - 10
+    - 11
+    rx_photonic_channels:
+    - 0
+    - 2
+    tx_photonic_channels:
+    - 0
+    - 2
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  2:
+    attached_nodes_photonic:
+    - 4
+    - 5
+    - 12
+    - 13
+    tx_photonic_channels:
+    - 1
+    - 3
+    rx_photonic_channels:
+    - 1
+    - 3
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  3:
+    attached_nodes_photonic:
+    - 6
+    - 7
+    - 14
+    - 15
+    rx_photonic_channels:
+    - 2
+    - 7
+    tx_photonic_channels:
+    - 2
+    - 7
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  4:
+    attached_nodes_photonic:
+    - 16
+    - 17
+    - 24
+    - 25
+    rx_photonic_channels:
+    - 0
+    - 8
+    tx_photonic_channels:
+    - 0
+    - 8
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  5:
+    attached_nodes_photonic:
+    - 18
+    - 19
+    - 26
+    - 27
+    rx_photonic_channels:
+    - 6
+    - 9
+    tx_photonic_channels:
+    - 6
+    - 9
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  6:
+    attached_nodes_photonic:
+    - 20
+    - 21
+    - 28
+    - 29
+    rx_photonic_channels:
+    - 7
+    - 5
+    tx_photonic_channels:
+    - 7
+    - 5
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  7:
+    attached_nodes_photonic:
+    - 22
+    - 23
+    - 30
+    - 31
+    rx_photonic_channels:
+    - 3
+    - 6
+    tx_photonic_channels:
+    - 3
+    - 6
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  8:
+    attached_nodes_photonic:
+    - 32
+    - 33
+    - 40
+    - 41
+    rx_photonic_channels:
+    - 4
+    - 12
+    tx_photonic_channels:
+    - 4
+    - 12
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  9:
+    attached_nodes_photonic:
+    - 34
+    - 35
+    - 42
+    - 43
+    rx_photonic_channels:
+    - 5
+    - 10
+    tx_photonic_channels:
+    - 5
+    - 10
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  10:
+    attached_nodes_photonic:
+    - 36
+    - 37
+    - 44
+    - 45
+    rx_photonic_channels:
+    - 9
+    - 11
+    tx_photonic_channels:
+    - 9
+    - 11
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  11:
+    attached_nodes_photonic:
+    - 38
+    - 39
+    - 46
+    - 47
+    rx_photonic_channels:
+    - 10
+    - 15
+    tx_photonic_channels:
+    - 10
+    - 15
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  12:
+    attached_nodes_photonic:
+    - 48
+    - 49
+    - 56
+    - 57
+    rx_photonic_channels:
+    - 8
+    - 13
+    tx_photonic_channels:
+    - 8
+    - 13
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  13:
+    attached_nodes_photonic:
+    - 50
+    - 51
+    - 58
+    - 59
+    rx_photonic_channels:
+    - 12
+    - 14
+    tx_photonic_channels:
+    - 12
+    - 14
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  14:
+    attached_nodes_photonic:
+    - 52
+    - 53
+    - 60
+    - 61
+    rx_photonic_channels:
+    - 13
+    - 15
+    tx_photonic_channels:
+    - 13
+    - 15
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+  15:
+    attached_nodes_photonic:
+    - 54
+    - 55
+    - 62
+    - 63
+    rx_photonic_channels:
+    - 11
+    - 14
+    tx_photonic_channels:
+    - 11
+    - 14
+    to_tile_buffer_size_photonic: 1024
+    from_tile_buffer_size_photonic: 1024
+    rx_buffer_size_photonic: 1024
+    tx_buffer_size_photonic: 1024
+PhotonicChannels:
+  defaults:
+    data_rate: 100
+    ber:
+    - 0
+    - 0
+    wavelength_policy: null
+clock_period_ps: 1000
+reset_time: 1000
+simulation_time: 2000
+stats_warm_up_time: 1000
+detailed: false
+max_volume_to_be_drained: 0
+show_buffer_stats: false
+use_winoc: false
+use_wirxsleep: false
+use_photonic: true
+use_wavelength_allocator: true
+max_photonic_wavelengths: 7
+verbose_mode: VERBOSE_HIGH
+trace_mode: false
+trace_filename: trace
+min_packet_size: 8
+max_packet_size: 8
+packet_injection_rate: 0.29999999999999993
+probability_of_retransmission: 0.01
+traffic_distribution: TRAFFIC_TRANSPOSE1
+traffic_table_filename: t.txt
+traffic_hardcoded_filename: t.txt
+seed: 42

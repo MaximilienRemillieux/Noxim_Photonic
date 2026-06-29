@@ -70,7 +70,7 @@ int ReservationTable::checkReservation(const TReservation r, const int port_out)
      /* On a given output entry, reservations must differ by VC
      *  Motivation: they will be interleaved cycle-by-cycle as index moves */
 
-     int n_reservations = rtable[port_out].reservations.size();
+    int n_reservations = rtable[port_out].reservations.size();
     for (int i=0;i< n_reservations; i++)
     {
 	// the reservation is already present
@@ -146,5 +146,3 @@ void ReservationTable::updateIndex()
 	    rtable[o].index = (rtable[o].index+1)%(rtable[o].reservations.size());
     }
 }
-
-

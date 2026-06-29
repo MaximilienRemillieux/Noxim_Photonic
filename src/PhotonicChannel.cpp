@@ -9,53 +9,12 @@
  * to forward configuration to every sub-block
  */
 #include "PhotonicChannel.h"
-PhotonicChannel::PhotonicChannel(sc_module_name nm, int id)
-: sc_module(nm),
-  targ_socket("targ_socket"),
-  init_socket("init_socket")
-{
-
-    local_id = id;
-
-    targ_socket.register_b_transport(this, &PhotonicChannel::b_transport);
-    targ_socket.register_get_direct_mem_ptr(this, &PhotonicChannel::get_direct_mem_ptr);
-    targ_socket.register_transport_dbg(this, &PhotonicChannel::transport_dbg);
-
-    init_socket.register_invalidate_direct_mem_ptr(this, &PhotonicChannel::invalidate_direct_mem_ptr);
-
-    int dataRate = GlobalParams::channel_configuration[local_id].dataRate;
-
-    int flit_delay_ps =
-        1000 * GlobalParams::flit_size / dataRate;
-
-    flit_transmission_cycles =
-        ceil((double)flit_delay_ps / GlobalParams::clock_period_ps);
-
-    cc_flit_transmission_delay_ps =
-        flit_transmission_cycles * GlobalParams::clock_period_ps;
-
-    LOG << "PhotonicChannel "
-        << local_id
-        << " data rate "
-        << dataRate
-        << " Gbps, transmission delay "
-        << flit_delay_ps
-        << " ps (" << flit_transmission_cycles
-        << " cycles)"
-        << endl;
-}
-
-int PhotonicChannel::getFlitTransmissionCycles()
-{
-    return flit_transmission_cycles;
-}
-
-void PhotonicChannel::b_transport( int id, tlm::tlm_generic_payload& trans, sc_time& delay )
+void PhotonicChannel::b_transport(int id, tlm::tlm_generic_payload& trans, sc_time& delay)
 {
 
     // the total transmission delay is due to TLM Initiator delay +
-    // photonic channel delay
-    delay += sc_time(this->cc_flit_transmission_delay_ps, SC_PS);
+    // channel delay
+    delay += sc_time(this->cc_flit_transmission_delay_fs, SC_FS);
 
     assert (id < (int)targ_socket.size());
 
@@ -89,13 +48,13 @@ void PhotonicChannel::b_transport( int id, tlm::tlm_generic_payload& trans, sc_t
 
 void PhotonicChannel::accountPhotonicRxPower()
 {
-    for (unsigned int i = 0; i<hubs.size();i++)
+    for (unsigned int i = 0; i<photonichubs.size();i++)
     {
 	if (!GlobalParams::use_powermanager) 
-	    hubs[i]->power.wirelessDynamicRx();
+	    photonichubs[i]->power.photonicDynamicRx();
 	else
-	if (!(hubs[i]->power.isSleeping()))
-	    hubs[i]->power.wirelessDynamicRx();
+	if (!(photonichubs[i]->power.isSleeping()))
+	    photonichubs[i]->power.photonicDynamicRx();
     }
 }
 
@@ -110,13 +69,13 @@ void PhotonicChannel::powerManager(unsigned int hub_dst_index, tlm::tlm_generic_
     {
 	int sleep_cycles = flit_transmission_cycles * f->sequence_length;
 
-	for (unsigned int i = 0; i<hubs.size();i++)
+	for (unsigned int i = 0; i<photonichubs.size();i++)
 	{
 
 	    if (i!=hub_dst_index) 
 	    {
-		hubs[i]->power.rxSleep(sleep_cycles);
-		LOG << " HUB_"<<hubs_id[i]<<" rxSleep() invoked with " << sleep_cycles << " cycles " << endl;
+		photonichubs[i]->power.rxSleep(sleep_cycles);
+		LOG << " PhotonicHUB_"<<photonic_hubs_id[i]<<" rxSleep() invoked with " << sleep_cycles << " cycles " << endl;
 	    }
 	}
     }
@@ -169,40 +128,11 @@ void PhotonicChannel::powerManager(unsigned int hub_dst_index, tlm::tlm_generic_
       targ_socket[i]->invalidate_direct_mem_ptr(bw_start_range, bw_end_range);
   }
 
-unsigned int PhotonicChannel::decode_address(
-        sc_dt::uint64 address,
-        sc_dt::uint64& masked_address)
-{
-
-    int target_nr = NOT_VALID;
-
-    masked_address = address;
-
-    for (unsigned int i = 0; i < hubs_id.size(); i++)
-    {
-        if (hubs_id[i] == (int)masked_address)
-        {
-            target_nr = i;
-            break;
-        }
-    }
-
-    assert(target_nr != NOT_VALID);
-
-    return target_nr;
-}
-
-sc_dt::uint64 PhotonicChannel::compose_address(
-        unsigned int target_nr,
-        sc_dt::uint64 address)
-{
-    return address;
-}
 
 void PhotonicChannel::addPhotonicHub(PhotonicHub* h)
 {
 
-    hubs.push_back(h);
-    hubs_id.push_back(h->getID());
+    photonichubs.push_back(h);
+    photonic_hubs_id.push_back(h->getID());
 
 }

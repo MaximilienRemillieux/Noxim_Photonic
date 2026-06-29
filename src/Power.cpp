@@ -42,6 +42,13 @@ Power::Power()
     antenna_buffer_front_pwr_d = 0.0;
     antenna_buffer_pwr_s = 0.0;
 
+    // Photonic specific
+    photonic_buffer_push_pwr_d = 0.0;
+    photonic_buffer_pop_pwr_d = 0.0;
+    photonic_buffer_front_pwr_d = 0.0;
+    photonic_buffer_pwr_s = 0.0;
+    photonic_rx_pwr = 0.0;
+
     wireless_rx_pwr = 0.0;
     transceiver_tx_pwr_s = 0.0;
     transceiver_rx_pwr_s = 0.0;
@@ -62,6 +69,10 @@ Power::Power()
     link_r2r_pwr_s = 0.0;
     link_r2h_pwr_s = 0.0;
     link_r2h_pwr_d = 0.0;
+
+    // Photonic specific
+    link_r2ph_pwr_s = 0.0;
+    link_r2ph_pwr_d = 0.0;
 
     default_tx_energy = 0.0;
 
@@ -125,15 +136,21 @@ void Power::configureRouter(int link_width,
     // Router has both type of links
     double length_r2h = GlobalParams::r2h_link_length;
     double length_r2r = GlobalParams::r2r_link_length;
+    // Photonic specific
+    double length_r2ph = GlobalParams::r2h_link_length;
     
     assert(GlobalParams::power_configuration.linkBitLinePowerConfig.find(length_r2r)!=GlobalParams::power_configuration.linkBitLinePowerConfig.end());
     assert(GlobalParams::power_configuration.linkBitLinePowerConfig.find(length_r2h)!=GlobalParams::power_configuration.linkBitLinePowerConfig.end());
+    assert(GlobalParams::power_configuration.linkBitLinePowerConfig.find(length_r2ph)!=GlobalParams::power_configuration.linkBitLinePowerConfig.end());
 
 
     link_r2r_pwr_s= W2J(link_width * GlobalParams::power_configuration.linkBitLinePowerConfig[length_r2r].first);
     link_r2r_pwr_d= link_width * GlobalParams::power_configuration.linkBitLinePowerConfig[length_r2r].second;
     link_r2h_pwr_s= W2J(link_width * GlobalParams::power_configuration.linkBitLinePowerConfig[length_r2h].first);
     link_r2h_pwr_d= link_width * GlobalParams::power_configuration.linkBitLinePowerConfig[length_r2h].second;
+    // Photonic specific
+    link_r2ph_pwr_s= W2J(link_width * GlobalParams::power_configuration.linkBitLinePowerConfig[length_r2ph].first);
+    link_r2ph_pwr_d= link_width * GlobalParams::power_configuration.linkBitLinePowerConfig[length_r2ph].second;
 }
 
 void Power::configureHub(int link_width,
@@ -150,7 +167,7 @@ void Power::configureHub(int link_width,
     // Buffer 
     pair<int,int> key_to_tile = pair<int,int>(buffer_to_tile_depth, buffer_item_size);
     pair<int,int> key_from_tile = pair<int,int>(buffer_from_tile_depth, buffer_item_size);
-    
+
     assert(GlobalParams::power_configuration.bufferPowerConfig.leakage.find(key_to_tile) != GlobalParams::power_configuration.bufferPowerConfig.leakage.end());
     assert(GlobalParams::power_configuration.bufferPowerConfig.push.find(key_to_tile) != GlobalParams::power_configuration.bufferPowerConfig.push.end());
     assert(GlobalParams::power_configuration.bufferPowerConfig.front.find(key_to_tile) != GlobalParams::power_configuration.bufferPowerConfig.front.end());
@@ -235,6 +252,100 @@ void Power::configureHub(int link_width,
 
 }
 
+void Power::configurePhotonicHub(int link_width,
+	int buffer_to_tile_depth, // buffer to tile
+	int buffer_from_tile_depth, // buffer from tile
+	int buffer_item_size,
+	int photonic_buffer_rx_depth, // rx/tx photonic buffers
+	int photonic_buffer_tx_depth, // rx/tx photonic buffers
+	int photonic_buffer_item_size,
+	int data_rate_gbs)
+{
+// (s)tatic, (d)ynamic power
+
+    // Buffer 
+    pair<int,int> key_to_tile = pair<int,int>(buffer_to_tile_depth, buffer_item_size);
+    pair<int,int> key_from_tile = pair<int,int>(buffer_from_tile_depth, buffer_item_size);
+    assert(GlobalParams::power_configuration.bufferPowerConfig.leakage.find(key_to_tile) != GlobalParams::power_configuration.bufferPowerConfig.leakage.end());
+    assert(GlobalParams::power_configuration.bufferPowerConfig.push.find(key_to_tile) != GlobalParams::power_configuration.bufferPowerConfig.push.end());
+    assert(GlobalParams::power_configuration.bufferPowerConfig.front.find(key_to_tile) != GlobalParams::power_configuration.bufferPowerConfig.front.end());
+    assert(GlobalParams::power_configuration.bufferPowerConfig.pop.find(key_to_tile) != GlobalParams::power_configuration.bufferPowerConfig.pop.end());
+
+    assert(GlobalParams::power_configuration.bufferPowerConfig.leakage.find(key_from_tile) != GlobalParams::power_configuration.bufferPowerConfig.leakage.end());
+    assert(GlobalParams::power_configuration.bufferPowerConfig.push.find(key_from_tile) != GlobalParams::power_configuration.bufferPowerConfig.push.end());
+    assert(GlobalParams::power_configuration.bufferPowerConfig.front.find(key_from_tile) != GlobalParams::power_configuration.bufferPowerConfig.front.end());
+    assert(GlobalParams::power_configuration.bufferPowerConfig.pop.find(key_from_tile) != GlobalParams::power_configuration.bufferPowerConfig.pop.end());
+
+    buffer_to_tile_pwr_s = W2J(GlobalParams::power_configuration.bufferPowerConfig.leakage[key_to_tile]);
+    buffer_to_tile_push_pwr_d = GlobalParams::power_configuration.bufferPowerConfig.push[key_to_tile];
+    buffer_to_tile_front_pwr_d = GlobalParams::power_configuration.bufferPowerConfig.front[key_to_tile];
+    buffer_to_tile_pop_pwr_d = GlobalParams::power_configuration.bufferPowerConfig.pop[key_to_tile];
+
+    buffer_from_tile_pwr_s = W2J(GlobalParams::power_configuration.bufferPowerConfig.leakage[key_from_tile]);
+    buffer_from_tile_push_pwr_d = GlobalParams::power_configuration.bufferPowerConfig.push[key_from_tile];
+    buffer_from_tile_front_pwr_d = GlobalParams::power_configuration.bufferPowerConfig.front[key_from_tile];
+    buffer_from_tile_pop_pwr_d = GlobalParams::power_configuration.bufferPowerConfig.pop[key_from_tile];
+   
+    // Buffer photonic RX
+    pair<int,int> akey = pair<int,int>(photonic_buffer_rx_depth,photonic_buffer_item_size);
+    
+    assert(GlobalParams::power_configuration.bufferPowerConfig.leakage.find(akey) != GlobalParams::power_configuration.bufferPowerConfig.leakage.end());
+    assert(GlobalParams::power_configuration.bufferPowerConfig.push.find(akey) != GlobalParams::power_configuration.bufferPowerConfig.push.end());
+    assert(GlobalParams::power_configuration.bufferPowerConfig.front.find(akey) != GlobalParams::power_configuration.bufferPowerConfig.front.end());
+    assert(GlobalParams::power_configuration.bufferPowerConfig.pop.find(akey) != GlobalParams::power_configuration.bufferPowerConfig.pop.end());
+
+    photonic_buffer_pwr_s = W2J(GlobalParams::power_configuration.bufferPowerConfig.leakage[akey]);
+    photonic_buffer_push_pwr_d = GlobalParams::power_configuration.bufferPowerConfig.push[akey];
+    photonic_buffer_front_pwr_d = GlobalParams::power_configuration.bufferPowerConfig.front[akey];
+    photonic_buffer_pop_pwr_d = GlobalParams::power_configuration.bufferPowerConfig.pop[akey];
+
+    // Buffer photonic TX
+    akey = pair<int,int>(photonic_buffer_tx_depth,photonic_buffer_item_size);
+    
+    assert(GlobalParams::power_configuration.bufferPowerConfig.leakage.find(akey) != GlobalParams::power_configuration.bufferPowerConfig.leakage.end());
+    assert(GlobalParams::power_configuration.bufferPowerConfig.push.find(akey) != GlobalParams::power_configuration.bufferPowerConfig.push.end());
+    assert(GlobalParams::power_configuration.bufferPowerConfig.front.find(akey) != GlobalParams::power_configuration.bufferPowerConfig.front.end());
+    assert(GlobalParams::power_configuration.bufferPowerConfig.pop.find(akey) != GlobalParams::power_configuration.bufferPowerConfig.pop.end());
+
+    // TODO: currently both RX/RX values are aggregated and then an average is returned 
+    photonic_buffer_pwr_s += W2J(GlobalParams::power_configuration.bufferPowerConfig.leakage[akey]);
+    photonic_buffer_push_pwr_d += GlobalParams::power_configuration.bufferPowerConfig.push[akey];
+    photonic_buffer_front_pwr_d += GlobalParams::power_configuration.bufferPowerConfig.front[akey];
+    photonic_buffer_pop_pwr_d += GlobalParams::power_configuration.bufferPowerConfig.pop[akey];
+
+    photonic_buffer_pwr_s = photonic_buffer_pwr_s/2;
+    photonic_buffer_push_pwr_d = photonic_buffer_push_pwr_d/2; 
+    photonic_buffer_front_pwr_d = photonic_buffer_front_pwr_d/2;
+    photonic_buffer_pop_pwr_d = photonic_buffer_pop_pwr_d/2;
+
+    // TX
+    // Joule
+    default_tx_energy = (GlobalParams::power_configuration.photonicHubPowerConfig.default_tx_energy / (1e9*data_rate_gbs) )* photonic_buffer_item_size;
+
+    // RX Dynamic
+    wireless_rx_pwr = photonic_buffer_item_size * GlobalParams::power_configuration.photonicHubPowerConfig.rx_dynamic;
+    
+    // RX snooping
+    //wireless_snooping = GlobalParams::power_configuration.photonicHubPowerConfig.rx_snooping;
+
+    // RX leakage
+    transceiver_rx_pwr_s = W2J(GlobalParams::power_configuration.photonicHubPowerConfig.modulator_leakage.first);
+    // TX leakage
+    transceiver_tx_pwr_s = W2J(GlobalParams::power_configuration.photonicHubPowerConfig.modulator_leakage.second);
+   
+    // RX biasing
+    transceiver_rx_pwr_biasing = W2J(GlobalParams::power_configuration.photonicHubPowerConfig.modulator_biasing.first);
+    // TX biasing
+    transceiver_tx_pwr_biasing = W2J(GlobalParams::power_configuration.photonicHubPowerConfig.modulator_biasing.second);
+    // Link 
+    // Hub has only Router/Hub link connections
+    double length_r2ph = GlobalParams::r2ph_link_length;
+    assert(GlobalParams::power_configuration.linkBitLinePowerConfig.find(length_r2ph)!=GlobalParams::power_configuration.linkBitLinePowerConfig.end());
+
+    link_r2ph_pwr_s= W2J(link_width * GlobalParams::power_configuration.linkBitLinePowerConfig[length_r2ph].first);
+    link_r2ph_pwr_d= link_width * GlobalParams::power_configuration.linkBitLinePowerConfig[length_r2ph].second;
+
+}
 
 // Router buffer
 void Power::bufferRouterPush()
@@ -303,6 +414,31 @@ void Power::antennaBufferFront()
     power_dynamic.breakdown[ANTENNA_BUFFER_FRONT_PWR_D].value += antenna_buffer_front_pwr_d;
 }
 
+// Photonic specific
+void Power::photonicBufferPush()
+{
+    power_dynamic.breakdown[PHOTONIC_BUFFER_PUSH_PWR_D].value += photonic_buffer_push_pwr_d;
+}
+// Photonic specific
+void Power::photonicBufferPop()
+{
+    power_dynamic.breakdown[PHOTONIC_BUFFER_POP_PWR_D].value += photonic_buffer_pop_pwr_d;
+}
+// Photonic specific
+void Power::photonicBufferFront()
+{
+    power_dynamic.breakdown[PHOTONIC_BUFFER_FRONT_PWR_D].value += photonic_buffer_front_pwr_d;
+}
+// Photonic specific
+void Power::photonicTx(int src,int dst,int length)
+{
+    // Implementation for photonic transmission
+}
+// Photonic specific
+void Power::photonicDynamicRx()
+{
+    power_dynamic.breakdown[PHOTONIC_DYNAMIC_RX_PWR].value += photonic_rx_pwr;
+}
 
 void Power::routing()
 {
@@ -327,6 +463,11 @@ void Power::r2rLink()
 void Power::r2hLink()
 {
     power_dynamic.breakdown[LINK_R2H_PWR_D].value +=link_r2h_pwr_d;
+}
+
+void Power::r2phLink()
+{
+    power_dynamic.breakdown[LINK_R2PH_PWR_D].value +=link_r2ph_pwr_d;
 }
 
 void Power::networkInterface()
@@ -424,6 +565,12 @@ void Power::leakageAntennaBuffer()
     power_static.breakdown[ANTENNA_BUFFER_PWR_S].value +=(antenna_buffer_pwr_s);
 }
 
+// Photonic specific
+void Power::leakagePhotonicBuffer()
+{
+    power_static.breakdown[PHOTONIC_BUFFER_PWR_S].value +=(photonic_buffer_pwr_s);
+}
+
 void Power::leakageLinkRouter2Router()
 {
     //power_static.breakdown[LINK_R2R_PWR_S].value +=link_r2r_pwr_s;
@@ -432,6 +579,12 @@ void Power::leakageLinkRouter2Router()
 void Power::leakageLinkRouter2Hub()
 {
     power_static.breakdown[LINK_R2H_PWR_S].value +=link_r2h_pwr_s;
+}
+
+// Photonic specific
+void Power::leakageLinkRouter2PhotonicHub()
+{
+    power_static.breakdown[LINK_R2PH_PWR_S].value +=link_r2ph_pwr_s;
 }
 
 void Power::leakageRouter()
@@ -457,6 +610,15 @@ void Power::leakageTransceiverTx()
 
     power_static.breakdown[TRANSCEIVER_TX_PWR_S].value +=transceiver_tx_pwr_s;
 }
+
+// Photonic specific
+void Power::leakageModulatorTx()
+{    // Implementation for modulator leakage
+}
+// Photonic specific
+void Power::leakagephotodetectorRx()
+{    // Implementation for photodetector leakage
+}   
 
 void Power::printBreakDown(std::ostream & out)
 {
@@ -526,6 +688,7 @@ void Power::initPowerBreakdown()
     initPowerBreakdownEntry(&power_static.breakdown[BUFFER_FROM_TILE_PWR_S],"buffer_from_tile_pwr_s");
     initPowerBreakdownEntry(&power_static.breakdown[ANTENNA_BUFFER_PWR_S],"antenna_buffer_pwr_s");
     initPowerBreakdownEntry(&power_static.breakdown[LINK_R2H_PWR_S],"link_r2h_pwr_s");
+    initPowerBreakdownEntry(&power_static.breakdown[LINK_R2PH_PWR_S],"link_r2ph_pwr_s");
     initPowerBreakdownEntry(&power_static.breakdown[ROUTING_PWR_S],"routing_pwr_s");
     initPowerBreakdownEntry(&power_static.breakdown[SELECTION_PWR_S],"selection_pwr_s");
     initPowerBreakdownEntry(&power_static.breakdown[CROSSBAR_PWR_S],"crossbar_pwr_s");

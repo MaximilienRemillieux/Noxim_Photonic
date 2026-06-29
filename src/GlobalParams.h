@@ -30,8 +30,11 @@ using namespace std;
 #define DIRECTION_WEST          3
 #define DIRECTION_LOCAL         4
 #define DIRECTION_HUB           5
+#define DIRECTION_PHOTONIC_HUB  6
 #define DIRECTION_HUB_RELAY     5000
-#define DIRECTION_WIRELESS    747
+#define DIRECTION_PHOTONIC_HUB_RELAY 6000
+#define DIRECTION_WIRELESS      747
+#define DIRECTION_WAVEGUIDE     666
 
 #define MAX_VIRTUAL_CHANNELS	8
 #define DEFAULT_VC 		0
@@ -109,6 +112,25 @@ typedef struct {
 } HubConfig;
 
 typedef struct {
+	pair<double, double> ber;
+	int dataRate;
+	vector<string> wavelengthPolicy;
+} PhotonicChannelConfig;
+
+typedef struct {
+	// topologie
+	vector<int> attachedNodesPhotonic;
+	vector<int> rxPhotonicChannels;
+	vector<int> txPhotonicChannels;
+	// electronic buffers
+	int toTileBufferSizePhotonic;
+	int fromTileBufferSizePhotonic;
+	int txBufferSizePhotonic;
+	int rxBufferSizePhotonic;
+	vector<int> wavelengths;              // vector of wavelength (WDM)
+} PhotonicHubConfig;
+
+typedef struct {
     map<pair <int, int>, double> front;
     map<pair <int, int>, double> pop;
     map<pair <int, int>, double> push;
@@ -134,10 +156,18 @@ typedef struct {
 } HubPowerConfig;
 
 typedef struct {
+	pair<double, double> modulator_leakage;
+	pair<double, double> modulator_biasing;
+	double rx_dynamic;
+	double default_tx_energy;
+} PhotonicHubPowerConfig;
+
+typedef struct {
     BufferPowerConfig bufferPowerConfig;
     LinkBitLinePowerConfig linkBitLinePowerConfig;
     RouterPowerConfig routerPowerConfig;
     HubPowerConfig hubPowerConfig;
+    PhotonicHubPowerConfig photonicHubPowerConfig;
 } PowerConfig;
 
 struct GlobalParams {
@@ -150,6 +180,7 @@ struct GlobalParams {
     static int n_delta_tiles;
     static double r2r_link_length;
     static double r2h_link_length;
+    static double r2ph_link_length;
     static int buffer_depth;
     static int flit_size;
     static int min_packet_size;
@@ -177,13 +208,26 @@ struct GlobalParams {
     static unsigned int max_volume_to_be_drained;
     static bool show_buffer_stats;
     static bool use_winoc;
+    static bool use_photonic;
     static int winoc_dst_hops;
+    static int pnoc_dst_hops;
     static bool use_powermanager;
     static ChannelConfig default_channel_configuration;
     static map<int, ChannelConfig> channel_configuration;
     static HubConfig default_hub_configuration;
     static map<int, HubConfig> hub_configuration;
     static map<int, int> hub_for_tile;
+    // Photonic Hub specific params
+    static PhotonicChannelConfig default_photonic_channel_configuration;
+	static map<int, PhotonicChannelConfig> photonic_channel_configuration;
+    static PhotonicHubConfig default_photonic_hub_configuration;
+    static map<int, PhotonicHubConfig> photonic_hub_configuration;
+    static map<int, int> photonic_hub_for_tile;
+
+    // Wavelength (ORNoC) allocation parameters
+    static bool use_wavelength_allocator;    // Enable ORNoC wavelength allocation
+    static int max_photonic_wavelengths;     // Max wavelengths per photonic ring
+
     static PowerConfig power_configuration;
     // out of yaml configuration
     static bool ascii_monitor;

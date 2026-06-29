@@ -130,6 +130,10 @@ struct Flit {
 
     int hub_relay_node;
 
+    // Photonic wavelength allocation (ORNoC)
+    int wavelength_id;      // Allocated wavelength for photonic transmission (-1 if not used)
+    int photonic_ring_id;   // Allocated ring for photonic transmission (-1 if not used)
+
     inline bool operator ==(const Flit & flit) const {
 	return (flit.src_id == src_id && flit.dst_id == dst_id
 		&& flit.flit_type == flit_type
@@ -138,8 +142,12 @@ struct Flit {
 		&& flit.sequence_length == sequence_length
 		&& flit.payload == payload && flit.timestamp == timestamp
 		&& flit.hop_no == hop_no
-		&& flit.use_low_voltage_path == use_low_voltage_path);
-}};
+		&& flit.use_low_voltage_path == use_low_voltage_path
+        // ORNoC wavelength allocation fields
+		&& flit.wavelength_id == wavelength_id
+		&& flit.photonic_ring_id == photonic_ring_id);
+    }
+};
 
 
 typedef struct 
@@ -163,15 +171,21 @@ enum
     ANTENNA_BUFFER_PUSH_PWR_D,
     ANTENNA_BUFFER_POP_PWR_D,
     ANTENNA_BUFFER_FRONT_PWR_D,
+    PHOTONIC_BUFFER_PUSH_PWR_D,
+    PHOTONIC_BUFFER_POP_PWR_D,
+    PHOTONIC_BUFFER_FRONT_PWR_D,
     ROUTING_PWR_D,
     SELECTION_PWR_D,
     CROSSBAR_PWR_D,
     LINK_R2R_PWR_D,
     LINK_R2H_PWR_D,
+    LINK_R2PH_PWR_D,
     NI_PWR_D,
     WIRELESS_TX,
     WIRELESS_DYNAMIC_RX_PWR,
     WIRELESS_SNOOPING,
+    PHOTONIC_TX,
+    PHOTONIC_DYNAMIC_RX_PWR,
     NO_BREAKDOWN_ENTRIES_D
 };
 
@@ -183,7 +197,9 @@ enum
     BUFFER_TO_TILE_PWR_S,
     BUFFER_FROM_TILE_PWR_S,
     ANTENNA_BUFFER_PWR_S,
+    PHOTONIC_BUFFER_PWR_S,
     LINK_R2H_PWR_S,
+    LINK_R2PH_PWR_S,
     ROUTING_PWR_S,
     SELECTION_PWR_S,
     CROSSBAR_PWR_S,

@@ -47,7 +47,7 @@ class ReservationTable {
     // Connects port_in with port_out. Asserts if port_out is reserved
     void reserve(const TReservation r, const int port_out);
 
-    // Releases port_out connection. 
+    // Releases port_out connection.
     // Asserts if port_out is not reserved or not valid
     void release(const TReservation r, const int port_out);
 

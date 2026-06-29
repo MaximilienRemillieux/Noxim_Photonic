@@ -22,9 +22,10 @@ buffer_depth: 256
 flit_size: 16
 # lenght in mm of router to hub connection
 r2h_link_length: 2.0
+r2ph_link_length: 2.0 # Photonic specific
 # lenght in mm of router to router connection
 r2r_link_length: 1.0
-n_virtual_channels: 2
+n_virtual_channels: 1
 
 # Routing algorithms:
 #   XY
@@ -85,166 +86,166 @@ Hubs:
 # sub-meshes
 
 
-    0:
-      attached_nodes: [0, 1, 8, 9]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024      
-    1:
-      attached_nodes: [2, 3, 10, 11]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024      
-    2:
-      attached_nodes: [4, 5, 12, 13]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024      
-    3:
-      attached_nodes: [6, 7, 14, 15]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024      
-    4:
-      attached_nodes: [16, 17, 24, 25]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024      
-    5:
-      attached_nodes: [18, 19, 26, 27]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024      
-    6:
-      attached_nodes: [20, 21, 28, 29]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024      
-    7:
-      attached_nodes: [22, 23, 30, 31]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024      
-    8:
-      attached_nodes: [32, 33, 40, 41]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024      
-    9:
-      attached_nodes: [34, 35, 42, 43]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024      
-    10:
-      attached_nodes: [36, 37, 44, 45]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024      
-    11:
-      attached_nodes: [38, 39, 46, 47]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024      
-    12:
-      attached_nodes: [48, 49, 56, 57]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024
-    13:
-      attached_nodes: [50, 51, 58, 59]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024
-    14:
-      attached_nodes: [52, 53, 60, 61]
-      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-      to_tile_buffer_size: 1024
-      from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-      rx_buffer_size: 1024
-      tx_buffer_size: 1024
-    15:
-       attached_nodes: [54, 55, 62, 63]
-       rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-       tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    # size of buffers connecting the hub to tiles
-       to_tile_buffer_size: 1024
-       from_tile_buffer_size: 1024
-    # size of antenna tx/rx
-       rx_buffer_size: 1024
-       tx_buffer_size: 1024
+#    0:
+#      attached_nodes: [0, 1, 8, 9]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024      
+#    1:
+#      attached_nodes: [2, 3, 10, 11]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024      
+#    2:
+#      attached_nodes: [4, 5, 12, 13]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024      
+#    3:
+#      attached_nodes: [6, 7, 14, 15]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024      
+#    4:
+#      attached_nodes: [16, 17, 24, 25]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024      
+#    5:
+#      attached_nodes: [18, 19, 26, 27]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024      
+#    6:
+#      attached_nodes: [20, 21, 28, 29]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024      
+#    7:
+#      attached_nodes: [22, 23, 30, 31]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024      
+#    8:
+#      attached_nodes: [32, 33, 40, 41]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024      
+#    9:
+#      attached_nodes: [34, 35, 42, 43]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024      
+#    10:
+#      attached_nodes: [36, 37, 44, 45]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024      
+#    11:
+#      attached_nodes: [38, 39, 46, 47]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024      
+#    12:
+#      attached_nodes: [48, 49, 56, 57]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024
+#    13:
+#      attached_nodes: [50, 51, 58, 59]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024
+#    14:
+#      attached_nodes: [52, 53, 60, 61]
+#      rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#      tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#      to_tile_buffer_size: 1024
+#      from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#      rx_buffer_size: 1024
+#      tx_buffer_size: 1024
+#    15:
+#       attached_nodes: [54, 55, 62, 63]
+#       rx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#       tx_radio_channels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#    # size of buffers connecting the hub to tiles
+#       to_tile_buffer_size: 1024
+#       from_tile_buffer_size: 1024
+#    # size of antenna tx/rx
+#       rx_buffer_size: 1024
+#       tx_buffer_size: 1024
 
 # Transmission channels configuration
 # each channel modelizes the transmission over a given frequency that
@@ -271,7 +272,13 @@ RadioChannels:
         #[TOKEN_MAX_HOLD, max_hold_cycles]
         mac_policy: [TOKEN_PACKET]
 
+PhotonicHubs:
 
+PhotonicChannels:
+    defaults:
+        data_rate: 100
+        ber: [0,0]
+        wavelength_policy:
 # SIMULATION PARAMETERS
 #
 clock_period_ps: 1000
@@ -293,6 +300,11 @@ show_buffer_stats: false
 use_winoc: true
 # experimental power saving strategy
 use_wirxsleep: false
+
+# Photonic interconnect
+use_photonic: true
+use_wavelength_allocator: true
+max_photonic_wavelengths: 7
 
 # Verbosity level:
 #   VERBOSE_OFF

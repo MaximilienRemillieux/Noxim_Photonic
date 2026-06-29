@@ -13,19 +13,23 @@
 
 using namespace std;
 
-inline int toggleKthBit(int n, int k) 
+// Function to toggle the k-th bit of n
+inline int toggleKthBit(int n, int k)
 { 
     return (n ^ (1 << (k-1))); 
 }
 
+// Common part of the NoC construction (Mesh, Torus, Butterfly, Baseline, Omega)
 void NoC::buildCommon()
 {
+	// Build the common part of the NoC (tiles, hubs, channels, routing and traffic tables)
+
 	token_ring = new TokenRing("tokenring");
 	token_ring->clock(clock);
 	token_ring->reset(reset);
 
-
-	char channel_name[16];
+	// Build the channels and hubs based on the configuration file
+	char channel_name[50];
 	for (map<int, ChannelConfig>::iterator it = GlobalParams::channel_configuration.begin();
 		 it != GlobalParams::channel_configuration.end();
 		 ++it)
@@ -35,10 +39,11 @@ void NoC::buildCommon()
 		channel[channel_id] = new Channel(channel_name, channel_id);
 	}
 
-	char hub_name[16];
-	for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
-		 it != GlobalParams::hub_configuration.end();
-		 ++it)
+	char hub_name[50];
+	for (map<int, HubConfig>::iterator it = 
+		GlobalParams::hub_configuration.begin();
+		it != GlobalParams::hub_configuration.end();
+		++it)
 	{
 		int hub_id = it->first;
 		//LOG << " hub id " <<  hub_id;
@@ -101,7 +106,7 @@ void NoC::buildCommon()
 
 		// TODO: update power model (configureHub to support different tx/tx buffer depth in the power breakdown
 		// Currently, an averaged value is used when accounting in Power class methods
-
+		//cout << "NoC.cpp: buildCommon" << endl;
 		hub[hub_id]->power.configureHub(GlobalParams::flit_size,
 										GlobalParams::hub_configuration[hub_id].toTileBufferSize,
 										GlobalParams::hub_configuration[hub_id].fromTileBufferSize,
@@ -127,7 +132,7 @@ void NoC::buildCommon()
 
 	// Var to track Hub connected ports
 	hub_connected_ports = (int *) calloc(GlobalParams::hub_configuration.size(), sizeof(int));
-
+	cout << "NoC.cpp: Build Common done" << endl;
 }
 void NoC::buildButterfly()
 {
@@ -2158,13 +2163,16 @@ void NoC::buildOmega()
 
 void NoC::buildMesh()
 {
+	//cout <<"NoC.cpp: Starting to buildCommon for Mesh" << endl;
     buildCommon();
-
+	//cout <<"NoC.cpp: Starting to buildCommonPhotonic for Mesh" << endl;
+	buildCommonPhotonic();
+	//cout << "NoC.cpp: Starting to build Mesh" << endl;
     // Initialize signals
     int dimX = GlobalParams::mesh_dim_x + 1;
     int dimY = GlobalParams::mesh_dim_y + 1;
 
-    
+
     req = new sc_signal_NSWEH<bool>*[dimX];
     ack = new sc_signal_NSWEH<bool>*[dimX];
     buffer_full_status = new sc_signal_NSWEH<TBufferFullStatus>*[dimX];
@@ -2176,7 +2184,7 @@ void NoC::buildMesh()
     for (int i=0; i < dimX; i++) {
         req[i] = new sc_signal_NSWEH<bool>[dimY];
         ack[i] = new sc_signal_NSWEH<bool>[dimY];
-	buffer_full_status[i] = new sc_signal_NSWEH<TBufferFullStatus>[dimY];
+		buffer_full_status[i] = new sc_signal_NSWEH<TBufferFullStatus>[dimY];
         flit[i] = new sc_signal_NSWEH<Flit>[dimY];
 
         free_slots[i] = new sc_signal_NSWE<int>[dimY];
@@ -2187,12 +2195,13 @@ void NoC::buildMesh()
     for (int i = 0; i < GlobalParams::mesh_dim_x; i++) {
     	t[i] = new Tile*[GlobalParams::mesh_dim_y];
     }
-
+	//cout << "NoC.cpp: Starting to build Mesh after Tile" << endl;
 
     // Create the mesh as a matrix of tiles
     for (int j = 0; j < GlobalParams::mesh_dim_y; j++) {
 	for (int i = 0; i < GlobalParams::mesh_dim_x; i++) {
 	    // Create the single Tile with a proper name
+		//cout << "NoC.cpp: Starting to build Mesh after boucle for" << endl;
 	    char tile_name[64];
 	    Coord tile_coord;
 	    tile_coord.x = i;
@@ -2200,18 +2209,19 @@ void NoC::buildMesh()
 	    int tile_id = coord2Id(tile_coord);
 	    sprintf(tile_name, "Tile[%02d][%02d]_(#%d)", i, j, tile_id);
 	    t[i][j] = new Tile(tile_name, tile_id);
-
+		//cout << "NoC.cpp: Starting to build Mesh after tile naming" << endl;
 	    // Tell to the router its coordinates
 	    t[i][j]->r->configure(j * GlobalParams::mesh_dim_x + i,
 				  			  GlobalParams::stats_warm_up_time,
 				  			  GlobalParams::buffer_depth,
 				  			  grtable);
+		//cout << "NoC.cpp: Starting to build Mesh after configure" << endl;
 	    t[i][j]->r->power.configureRouter(GlobalParams::flit_size,
 		      			      			  GlobalParams::buffer_depth,
 					      				  GlobalParams::flit_size,
 					      				  string(GlobalParams::routing_algorithm),
 					      				  "default");
-
+		//cout << "NoC.cpp: Starting to build Mesh after configureRouter" << endl;
 	    // Tell to the PE its coordinates
 	    t[i][j]->pe->local_id = j * GlobalParams::mesh_dim_x + i;
 
@@ -2226,7 +2236,7 @@ void NoC::buildMesh()
 		
 		if (GlobalParams::traffic_distribution == TRAFFIC_HARDCODED)
 		  t[i][j]->pe->traffic_hardcoded = &ghtable;
-
+		//cout << "NoC.cpp: Starting to build Mesh, traffic table initialized " << t[i][j]->pe->local_id << endl;
 	    // Map clock and reset
 	    t[i][j]->clock(clock);
 	    t[i][j]->reset(reset);
@@ -2272,7 +2282,7 @@ void NoC::buildMesh()
 	    t[i][j]->flit_tx[DIRECTION_WEST] (flit[i][j].west);
 	    t[i][j]->ack_tx[DIRECTION_WEST] (ack[i][j].east);
 	    t[i][j]->buffer_full_status_tx[DIRECTION_WEST] (buffer_full_status[i][j].east);
-
+		//cout << "NoC.cpp: Starting to build Mesh, routing connection Mesh" << endl;
 	    // TODO: check if hub signal is always required
 	    // signals/port when tile receives(rx) from hub
 	    t[i][j]->hub_req_rx(req[i][j].from_hub);
@@ -2285,6 +2295,20 @@ void NoC::buildMesh()
 	    t[i][j]->hub_flit_tx(flit[i][j].to_hub);
 	    t[i][j]->hub_ack_tx(ack[i][j].from_hub);
 	    t[i][j]->hub_buffer_full_status_tx(buffer_full_status[i][j].from_hub);
+		//cout << "NoC.cpp: Starting to build Mesh after connection Tile to Hub" << endl;
+
+		// signals/port when tile receives(rx) from photonic_hub
+	    t[i][j]->photonic_hub_req_rx(req[i][j].from_photonic_hub);
+	    t[i][j]->photonic_hub_flit_rx(flit[i][j].from_photonic_hub);
+	    t[i][j]->photonic_hub_ack_rx(ack[i][j].to_photonic_hub);
+	    t[i][j]->photonic_hub_buffer_full_status_rx(buffer_full_status[i][j].to_photonic_hub);
+
+	    // signals/port when tile transmits(tx) to photonic_hub
+	    t[i][j]->photonic_hub_req_tx(req[i][j].to_photonic_hub);
+	    t[i][j]->photonic_hub_flit_tx(flit[i][j].to_photonic_hub);
+	    t[i][j]->photonic_hub_ack_tx(ack[i][j].from_photonic_hub);
+	    t[i][j]->photonic_hub_buffer_full_status_tx(buffer_full_status[i][j].from_photonic_hub);
+		//cout << "NoC.cpp: Starting to build Mesh after connection Tile to PhotonicHub" << endl;
 
         // TODO: Review port index. Connect each Hub to all its Channels 
         map<int, int>::iterator it = GlobalParams::hub_for_tile.find(tile_id);
@@ -2308,6 +2332,28 @@ void NoC::buildMesh()
             hub[hub_id]->ack_tx[port](ack[i][j].to_hub);
             hub[hub_id]->buffer_full_status_tx[port](buffer_full_status[i][j].to_hub);
         }
+		//cout << "NoC.cpp: Starting to build Mesh after connection between Hubs to Tile" << endl;
+		map<int, int>::iterator iit = GlobalParams::photonic_hub_for_tile.find(tile_id);
+		if (iit != GlobalParams::photonic_hub_for_tile.end())
+		{
+			//cout << "NoC.cpp: Starting to build Mesh photonic_hub_for_tile : " << iit->second << endl;
+			int photonic_hub_id = GlobalParams::photonic_hub_for_tile[tile_id];
+			//cout << "NoC.cpp: Starting to build Mesh, photonic_hub_id " << photonic_hub_id << endl;
+			int port = photonic_hub_connected_ports[photonic_hub_id]++;
+			//cout << "NoC.cpp: Starting to build Mesh, photonic_hub_port " << port << endl;
+			photonic_hub[photonic_hub_id]->tile2port_mapping[t[i][j]->local_id] = port;
+
+			photonic_hub[photonic_hub_id]->req_rx[port](req[i][j].to_photonic_hub);
+			photonic_hub[photonic_hub_id]->flit_rx[port](flit[i][j].to_photonic_hub);
+			photonic_hub[photonic_hub_id]->ack_rx[port](ack[i][j].from_photonic_hub);
+			photonic_hub[photonic_hub_id]->buffer_full_status_rx[port](buffer_full_status[i][j].from_photonic_hub);
+
+			photonic_hub[photonic_hub_id]->flit_tx[port](flit[i][j].from_photonic_hub);
+			photonic_hub[photonic_hub_id]->req_tx[port](req[i][j].from_photonic_hub);
+			photonic_hub[photonic_hub_id]->ack_tx[port](ack[i][j].to_photonic_hub);
+			photonic_hub[photonic_hub_id]->buffer_full_status_tx[port](buffer_full_status[i][j].to_photonic_hub);
+		}
+		//cout << "NoC.cpp: Starting to build Mesh after connection between PhotonicHubs to Tile" << endl;
 
         // Map buffer level signals (analogy with req_tx/rx port mapping)
 	    t[i][j]->free_slots[DIRECTION_NORTH] (free_slots[i][j].north);
@@ -2332,6 +2378,7 @@ void NoC::buildMesh()
 	    t[i][j]->NoP_data_in[DIRECTION_WEST] (nop_data[i][j].east);
 
 	}
+	//cout << "NoC.cpp: Starting to build Mesh after Matrix of Tile" << endl;
     }
 
     // dummy NoP_data structure
@@ -2374,12 +2421,15 @@ void NoC::buildMesh()
 	nop_data[GlobalParams::mesh_dim_x][j].west.write(tmp_NoP);
 
     }
-
+	cout << "NoC.cpp: Mesh build Done" << endl;
 }
 
 void NoC::buildTorus()
 {
+	cout <<"NoC.cpp: Starting to buildCommon for Mesh" << endl;
     buildCommon();
+	cout <<"NoC.cpp: Starting to buildCommonPhotonic for Mesh" << endl;
+	buildCommonPhotonic();
 
     int dimX = GlobalParams::mesh_dim_x;
     int dimY = GlobalParams::mesh_dim_y;
@@ -2509,7 +2559,20 @@ void NoC::buildTorus()
 		t[i][j]->hub_flit_tx(flit[i][j].to_hub);
 		t[i][j]->hub_ack_tx(ack[i][j].from_hub);
 		t[i][j]->hub_buffer_full_status_tx(buffer_full_status[i][j].from_hub);
-	
+
+		// signals/port when tile receives(rx) from photonic_hub
+	    t[i][j]->photonic_hub_req_rx(req[i][j].from_photonic_hub);
+	    t[i][j]->photonic_hub_flit_rx(flit[i][j].from_photonic_hub);
+	    t[i][j]->photonic_hub_ack_rx(ack[i][j].to_photonic_hub);
+	    t[i][j]->photonic_hub_buffer_full_status_rx(buffer_full_status[i][j].to_photonic_hub);
+
+	    // signals/port when tile transmits(tx) to photonic_hub
+	    t[i][j]->photonic_hub_req_tx(req[i][j].to_photonic_hub); // 7, sc_out
+	    t[i][j]->photonic_hub_flit_tx(flit[i][j].to_photonic_hub);
+	    t[i][j]->photonic_hub_ack_tx(ack[i][j].from_photonic_hub);
+	    t[i][j]->photonic_hub_buffer_full_status_tx(buffer_full_status[i][j].from_photonic_hub);
+		
+		// TODO : Add photonic_hubfor_tile and connect the tile to the photonic hub if it exists
 		map<int, int>::iterator it = GlobalParams::hub_for_tile.find(tile_id);
 		if (it != GlobalParams::hub_for_tile.end())
 		{
@@ -2527,6 +2590,25 @@ void NoC::buildTorus()
 			hub[hub_id]->ack_tx[port](ack[i][j].to_hub);
 			hub[hub_id]->buffer_full_status_tx[port](buffer_full_status[i][j].to_hub);
 		}
+
+		map<int, int>::iterator iit = GlobalParams::photonic_hub_for_tile.find(tile_id);
+		if (iit != GlobalParams::photonic_hub_for_tile.end())
+		{
+			int photonic_hub_id = GlobalParams::photonic_hub_for_tile[tile_id];
+			int port = photonic_hub_connected_ports[photonic_hub_id]++;
+			photonic_hub[photonic_hub_id]->tile2port_mapping[t[i][j]->local_id] = port;
+
+			photonic_hub[photonic_hub_id]->req_rx[port](req[i][j].to_photonic_hub);
+			photonic_hub[photonic_hub_id]->flit_rx[port](flit[i][j].to_photonic_hub);
+			photonic_hub[photonic_hub_id]->ack_rx[port](ack[i][j].from_photonic_hub);
+			photonic_hub[photonic_hub_id]->buffer_full_status_rx[port](buffer_full_status[i][j].from_photonic_hub);
+
+			photonic_hub[photonic_hub_id]->flit_tx[port](flit[i][j].from_photonic_hub);
+			photonic_hub[photonic_hub_id]->req_tx[port](req[i][j].from_photonic_hub);
+			photonic_hub[photonic_hub_id]->ack_tx[port](ack[i][j].to_photonic_hub);
+			photonic_hub[photonic_hub_id]->buffer_full_status_tx[port](buffer_full_status[i][j].to_photonic_hub);
+		}
+
 	// Map buffer level signals (analogy with req_tx/rx port mapping)
 	t[i][j]->free_slots[DIRECTION_NORTH] (free_slots[i][north].north);
 	t[i][j]->free_slots[DIRECTION_EAST] (free_slots[east][j].east);
@@ -2571,89 +2653,94 @@ void NoC::buildTorus()
 
 void NoC::buildCommonPhotonic()
 {
-	char photonic_channel_name[16];
-	for (map<int, ChannelConfig>::iterator it = GlobalParams::channel_configuration.begin();
-		 it != GlobalParams::channel_configuration.end();
+	//cout << "NoC.cpp: Starting buildCommonPhotonic" << endl;
+	//char photonic_channel_name[50];
+	for (map<int, PhotonicChannelConfig>::iterator it = GlobalParams::photonic_channel_configuration.begin();
+		 it != GlobalParams::photonic_channel_configuration.end();
 		 ++it)
 	{
 		int photonic_channel_id = it->first;
-		sprintf(photonic_channel_name, "PhotonicChannel_%d", photonic_channel_id);
-		photonic_channel[photonic_channel_id] = new PhotonicChannel(photonic_channel_name, photonic_channel_id);
+		std::string name = "PhotonicChannel_" + std::to_string(photonic_channel_id);
+		photonic_channel[photonic_channel_id] = new PhotonicChannel(name.c_str(), photonic_channel_id);
+		//sprintf(photonic_channel_name, "PhotonicChannel_%d", photonic_channel_id);
+		//photonic_channel[photonic_channel_id] = new PhotonicChannel(photonic_channel_name, photonic_channel_id);
 	}
-
-	char hub_name[16];
-	for (map<int, HubConfig>::iterator it = GlobalParams::hub_configuration.begin();
-		 it != GlobalParams::hub_configuration.end();
-		 ++it)
+	//cout << "NoC.cpp: After building photonic_channel"<< endl;
+	char photonic_hub_name[16];
+	for (map<int, PhotonicHubConfig>::iterator it = GlobalParams::photonic_hub_configuration.begin();
+		it != GlobalParams::photonic_hub_configuration.end();
+		++it)
 	{
-		int hub_id = it->first;
-		//LOG << " hub id " <<  hub_id;
-		HubConfig hub_config = it->second;
+		int photonic_hub_id = it->first;
+		//cout << "NoC.cpp: Starting to build photonic_hub id " <<  photonic_hub_id << endl;
+		//LOG << " photonic_hub id " <<  photonic_hub_id;
+		PhotonicHubConfig photonic_hub_config = it->second;
 
-		sprintf(hub_name, "PhotonicHub_%d", hub_id);
-		hub[hub_id] = new PhotonicHub(hub_name, hub_id);
-		hub[hub_id]->clock(clock);
-		hub[hub_id]->reset(reset);
+		sprintf(photonic_hub_name, "PhotonicHub_%d", photonic_hub_id);
+		photonic_hub[photonic_hub_id] = new PhotonicHub(photonic_hub_name, photonic_hub_id);
+		photonic_hub[photonic_hub_id]->clock(clock);
+		photonic_hub[photonic_hub_id]->reset(reset);
+		//cout << "NoC.cpp: After connecting clock/reset for PhotonicHubConfig"<< endl;
 
-
-		// Determine, from configuration file, which Hub is connected to which Tile
-		for(vector<int>::iterator iit = hub_config.attachedNodes.begin();
-			iit != hub_config.attachedNodes.end();
+		// Determine, from configuration file, which PhotonicHub is connected to which Tile
+		for(vector<int>::iterator iit = photonic_hub_config.attachedNodesPhotonic.begin();
+			iit != photonic_hub_config.attachedNodesPhotonic.end();
 			++iit)
 		{
-			GlobalParams::hub_for_tile[*iit] = hub_id;
-			//LOG<<"I am hub "<<hub_id<<" and I amconnecting to "<<*iit<<endl;
+			GlobalParams::photonic_hub_for_tile[*iit] = photonic_hub_id;
+			//cout << "NoC.cpp: I am hub " << photonic_hub_id << " and I am connecting to " << *iit << endl;
 
 		}
-		//for (map<int, int>::iterator it1 = GlobalParams::hub_for_tile.begin(); it1 != GlobalParams::hub_for_tile.end(); it1++ )
+		//cout << "NoC.cpp: After connecting each Tile to photonic_hub"<< endl;
+		//for (map<int, int>::iterator it1 = GlobalParams::photonic_hub_for_tile.begin(); it1 != GlobalParams::photonic_hub_for_tile.end(); it1++ )
 		//LOG<<"it1 first "<< it1->first<< "second"<< it1->second<<endl;
 
 		// Determine, from configuration file, which Hub is connected to which Channel
-		for(vector<int>::iterator iit = hub_config.txChannels.begin();
-			iit != hub_config.txChannels.end();
+		for(vector<int>::iterator iit = photonic_hub_config.txPhotonicChannels.begin();
+			iit != photonic_hub_config.txPhotonicChannels.end();
 			++iit)
 		{
 			int photonic_channel_id = *iit;
-			//LOG << "Binding " << hub[hub_id]->name() << " to txChannel " << photonic_channel_id << endl;
-			hub[hub_id]->init[photonic_channel_id]->socket.bind(photonic_channel[photonic_channel_id]->targ_socket);
-			//LOG << "Binding " << hub[hub_id]->name() << " to txChannel " << photonic_channel_id << endl;
-			hub[hub_id]->setFlitTransmissionCycles(photonic_channel[photonic_channel_id]->getFlitTransmissionCycles(),photonic_channel_id);
+			//LOG << "Binding " << hub[photonic_hub_id]->name() << " to txChannel " << photonic_channel_id << endl;
+			photonic_hub[photonic_hub_id]->init[photonic_channel_id]->socket.bind(photonic_channel[photonic_channel_id]->targ_socket);
+			//LOG << "Binding " << hub[photonic_hub_id]->name() << " to txChannel " << photonic_channel_id << endl;
+			photonic_hub[photonic_hub_id]->setFlitTransmissionCycles(photonic_channel[photonic_channel_id]->getFlitTransmissionCycles(),photonic_channel_id);
 		}
-
-		for(vector<int>::iterator iit = hub_config.rxChannels.begin();
-			iit != hub_config.rxChannels.end();
+		//cout << "NoC.cpp: After connecting each Tile to txPhotonicChannels"<< endl;
+		for(vector<int>::iterator iit = photonic_hub_config.rxPhotonicChannels.begin();
+			iit != photonic_hub_config.rxPhotonicChannels.end();
 			++iit)
 		{
 			int photonic_channel_id = *iit;
-			//LOG << "Binding " << hub[hub_id]->name() << " to rxChannel " << photonic_channel_id << endl;
-			photonic_channel[photonic_channel_id]->init_socket.bind(hub[hub_id]->target[photonic_channel_id]->socket);
-			photonic_channel[photonic_channel_id]->addPhotonicHub(hub[hub_id]);
+			//LOG << "Binding " << hub[photonic_hub_id]->name() << " to rxChannel " << photonic_channel_id << endl;
+			photonic_channel[photonic_channel_id]->init_socket.bind(photonic_hub[photonic_hub_id]->target[photonic_channel_id]->socket);
+			photonic_channel[photonic_channel_id]->addPhotonicHub(static_cast<PhotonicHub*>(photonic_hub[photonic_hub_id]));
 		}
-
+		//cout << "NoC.cpp: After connecting each Tile to rxPhotonicChannels"<< endl;
 		// TODO FIX
 		// Hub Power model does not currently support different data rates for single hub
 		// If multiple photonic_channels are connected to an Hub, the data rate
 		// of the first photonic_channel will be used as default
 
-		int no_photonic_channels = hub_config.txChannels.size();
+		int no_photonic_channels = photonic_hub_config.rxPhotonicChannels.size();
 
 		int data_rate_gbs;
 
 		if (no_photonic_channels > 0) {
-			data_rate_gbs = GlobalParams::channel_configuration[hub_config.txChannels[0]].dataRate;
+			data_rate_gbs = GlobalParams::photonic_channel_configuration[photonic_hub_config.rxPhotonicChannels[0]].dataRate;
 		}
 		else
 			data_rate_gbs = NOT_VALID;
 
 		// TODO: update power model (configureHub to support different tx/tx buffer depth in the power breakdown
 		// Currently, an averaged value is used when accounting in Power class methods
-
-		hub[hub_id]->power.configureHub(GlobalParams::flit_size,
-										GlobalParams::hub_configuration[hub_id].toTileBufferSize,
-										GlobalParams::hub_configuration[hub_id].fromTileBufferSize,
+		//cout << "Noc.cpp: before configurePhotonicHub" << endl;
+		photonic_hub[photonic_hub_id]->power.configurePhotonicHub(GlobalParams::flit_size,
+										GlobalParams::photonic_hub_configuration[photonic_hub_id].toTileBufferSizePhotonic,
+										GlobalParams::photonic_hub_configuration[photonic_hub_id].fromTileBufferSizePhotonic,
 										GlobalParams::flit_size,
-										GlobalParams::hub_configuration[hub_id].rxBufferSize,
-										GlobalParams::hub_configuration[hub_id].txBufferSize,
+										GlobalParams::photonic_hub_configuration[photonic_hub_id].rxBufferSizePhotonic,
+										GlobalParams::photonic_hub_configuration[photonic_hub_id].txBufferSizePhotonic,
 										GlobalParams::flit_size,
 										data_rate_gbs);
 	}
@@ -2672,8 +2759,8 @@ void NoC::buildCommonPhotonic()
 		assert(ghtable.load(GlobalParams::traffic_hardcoded_filename.c_str()));
 
 	// Var to track Hub connected ports
-	hub_connected_ports = (int *) calloc(GlobalParams::hub_configuration.size(), sizeof(int));
-
+	photonic_hub_connected_ports = (int *) calloc(GlobalParams::photonic_hub_configuration.size(), sizeof(int));
+	cout << "NoC.cpp: Build Photonic done" << endl;
 }
 
 Tile *NoC::searchNode(const int id) const

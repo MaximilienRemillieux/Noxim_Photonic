@@ -56,7 +56,7 @@ SC_MODULE(ProcessingElement)
     Packet trafficRandom();	// Random destination distribution
     Packet trafficTranspose1();	// Transpose 1 destination distribution
     Packet trafficTranspose2();	// Transpose 2 destination distribution
-    Packet trafficBitReversal();	// Bit-reversal destination distribution
+    Packet trafficBitReversal();// Bit-reversal destination distribution
     Packet trafficShuffle();	// Shuffle destination distribution
     Packet trafficButterfly();	// Butterfly destination distribution
     Packet trafficLocal();	// Random with locality
@@ -75,7 +75,7 @@ SC_MODULE(ProcessingElement)
     int getBit(int x, int w);
     double log2ceil(double x);
 
-    int roulett();
+    //int roulette();
     int findRandomDestination(int local_id,int hops);
     unsigned int getQueueSize() const;
 
